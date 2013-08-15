@@ -1,3 +1,15 @@
+
+#Python Files
+*.pyc
+
+# Vim Files
+*.swp
+*.swo
+build
+
+# Scons object
+.sconsign.dblite
+
 # Object files
 *.o
 
