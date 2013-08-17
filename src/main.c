@@ -11,57 +11,84 @@
    CPU is not involved in the data transfer.
 
    The DMA buffer size is defined based on the USB speed. 64 for full speed, 512 for high speed and 1024
-   for super speed. CY_FX_BULKLP_DMA_BUF_COUNT in the header file defines the number of DMA buffers.
+   for super speed. CY_FX_COMM_DMA_BUF_COUNT in the header file defines the number of DMA buffers.
  */
 
 #include "cyu3system.h"
 #include "cyu3os.h"
 #include "cyu3dma.h"
 #include "cyu3error.h"
+
 #include "cypress_usb_defines.h"
-#include "cyu3usb.h"
 
 #include "prometheus.h"
 #include "gpio_controller.h"
 #include "usb_controller.h"
+#include "fpga_config.h"
 
 
-CyU3PThread     gpio_out_thread;    /* GPIO thread structure */
-CyU3PThread     gpio_in_thread;     /* GPIO thread structure */
-CyU3PEvent      gpio_event;         /* GPIO input event group. */
+extern CyBool_t COMM_APP_ACTIVE;              /* Comm Mode Enabled */
+extern CyBool_t FPGA_CONFIG_APP_ACTIVE;       /* FPGA Config Mode */
 
-CyU3PThread     main_thread;	      /* Bulk loop application thread structure */
+CyU3PThread     gpio_out_thread;              /* GPIO thread structure */
+CyU3PThread     gpio_in_thread;               /* GPIO thread structure */
+CyU3PEvent      gpio_event;                   /* GPIO input event group. */
+CyU3PEvent      main_event;                   /* Events that change */
 
-CyBool_t reset_device = CyFalse;    /* Request to reset the FX3 device. */
+CyU3PThread     main_thread;	                /* Main application thread structure */
 
 /* Application Error Handler */
-void CyFxAppErrorHandler (CyU3PReturnStatus_t apiRetStatus){
-    for (;;){
-        CyU3PThreadSleep (100);
-    }
+void CyFxAppErrorHandler (CyU3PReturnStatus_t status){
+  CyU3PDebugPrint (4, "Error Handler: Error code: %d\n", status);
+  for (;;){
+    CyU3PThreadSleep (100);
+  }
 }
 
 /* Entry function for the main_thread. */
 void main_thread_entry (uint32_t input) {
-    /* Initialize the debug module */
-    debug_init();
+	CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
+  uint32_t  event_flag;
 
-    /* Initialize the bulk loop application */
-    bulk_app_init();
+  /* Initialize the debug module */
+  debug_init();
 
-    for (;;){
+  /* Initialize GPIO module. */
+  gpio_init ();
+
+  /* Initialize the bulk loop application */
+  usb_init();
+
+  for (;;){
+    //CyU3PThreadSleep (100);
+    //This Function will block and wit for events to happen
+    retval = CyU3PEventGet (&main_event,
+    	                        (RESET_PROC_BOOT_EVENT |
+                               ENTER_FPGA_CONFIG_MODE_EVENT |
+                               ENTER_FPGA_COMM_MODE_EVENT),
+    	                      CYU3P_EVENT_OR_CLEAR,
+                            &event_flag,
+                            CYU3P_WAIT_FOREVER);
+    if (retval == CY_U3P_SUCCESS){
+      if (event_flag & RESET_PROC_BOOT_EVENT) {
+        CyU3PDebugPrint (3, "Reset To Boot Mode in 1 second");
         CyU3PThreadSleep (1000);
-
-        if (reset_device){
-            /* Disconnect from the USB host and reset the device. */
-            reset_device = CyFalse;
-            CyU3PThreadSleep (1000);
-            CyU3PConnectState (CyFalse, CyTrue);
-            CyU3PThreadSleep (1000);
-            CyU3PDeviceReset (CyFalse);
-            for (;;);
-        }
+        /* Disconnect from the USB host and reset the device. */
+        CyU3PConnectState (CyFalse, CyTrue);
+        CyU3PThreadSleep (1000);
+        CyU3PDeviceReset (CyFalse);
+        for (;;);
+      }
+      if (event_flag & ENTER_FPGA_CONFIG_MODE_EVENT){
+        //Configure the MCU to program the FPGA
+        CyU3PDebugPrint (3, "Program the FPGA");
+      }
+      if (event_flag & ENTER_FPGA_COMM_MODE_EVENT){
+        //Configure the MCU to use the FIFO mode
+        CyU3PDebugPrint (3, "Switch to Parallel FIFO mode");
+      }
     }
+  }
 }
 
 /* Application define function which creates the threads. */
@@ -70,7 +97,7 @@ void CyFxApplicationDefine (void){
     uint32_t retvalue = CY_U3P_SUCCESS;
 
     /* Allocate the memory for the threads */
-    ptr = CyU3PMemAlloc (CY_FX_BULKLP_THREAD_STACK);
+    ptr = CyU3PMemAlloc (CY_FX_COMM_THREAD_STACK);
 
     /* Create the thread for the application */
     retvalue = CyU3PThreadCreate (
@@ -79,9 +106,9 @@ void CyFxApplicationDefine (void){
         main_thread_entry,            /* Bulk loop App Thread Entry function */
         0,                            /* No input parameter to thread */
         ptr,                          /* Pointer to the allocated thread stack */
-        CY_FX_BULKLP_THREAD_STACK,    /* Bulk loop App Thread stack size */
-        CY_FX_BULKLP_THREAD_PRIORITY, /* Bulk loop App Thread priority */
-        CY_FX_BULKLP_THREAD_PRIORITY, /* Bulk loop App Thread priority */
+        CY_FX_COMM_THREAD_STACK,    /* Bulk loop App Thread stack size */
+        CY_FX_COMM_THREAD_PRIORITY, /* Bulk loop App Thread priority */
+        CY_FX_COMM_THREAD_PRIORITY, /* Bulk loop App Thread priority */
         CYU3P_NO_TIME_SLICE,          /* No time slice for the application thread */
         CYU3P_AUTO_START              /* Start the Thread immediately */
         );
@@ -91,6 +118,7 @@ void CyFxApplicationDefine (void){
         while(1);
     }
 
+    //I'm not sure if I really need this
     //Create GPIO Ouput Thread
     /* Allocate the memory for the threads */
     ptr = CyU3PMemAlloc (CY_FX_GPIOAPP_THREAD_STACK);
@@ -137,7 +165,8 @@ void CyFxApplicationDefine (void){
     }
     /* Create GPIO application event group */
     retvalue = CyU3PEventCreate(&gpio_event);
-    if (retvalue != 0){ 
+    retvalue = CyU3PEventCreate(&main_event);
+    if (retvalue != 0){
         while(1);
     }
 }
@@ -169,12 +198,12 @@ int main (void){
      * is connected to the IO(53:56). This means that either DQ32 mode should be
      * selected or lppMode should be set to UART_ONLY. Here we are choosing
      * UART_ONLY configuration. */
-    io_cfg.isDQ32Bit = CyFalse;
-    io_cfg.useUart   = CyTrue;
-    io_cfg.useI2C    = CyFalse;
-    io_cfg.useI2S    = CyFalse;
-    io_cfg.useSpi    = CyFalse;
-    io_cfg.lppMode   = CY_U3P_IO_MATRIX_LPP_UART_ONLY;
+    io_cfg.isDQ32Bit        = CyFalse;
+    io_cfg.useUart          = CyTrue;
+    io_cfg.useI2C           = CyTrue;
+    io_cfg.useI2S           = CyFalse;
+    io_cfg.useSpi           = CyFalse;
+    io_cfg.lppMode          = CY_U3P_IO_MATRIX_LPP_UART_ONLY;
 
     /*Enable GPIO*/
     //These are taken from prometheus.h

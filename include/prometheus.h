@@ -52,4 +52,19 @@
                                   INIT_N_DIR              <<  (INIT_N - 32)             | \
                                   DONE_DIR                <<  (DONE - 32))
 
+
+
+//USB Defines (User calls thi message
+#define RESET_TO_BOOTMODE              0xE0
+#define ENTER_FPGA_CONFIG_MODE         0xB2
+#define ENTER_FPGA_COMM_MODE           0xB1
+
+
+//Events that are raised when user calls the message
+#define RESET_PROC_BOOT_EVENT          (1 << 0)
+#define ENTER_FPGA_CONFIG_MODE_EVENT   (1 << 1)
+#define ENTER_FPGA_COMM_MODE_EVENT     (1 << 2)
+
+
+
 #endif  //__PROMETHEUS_DEFINES__

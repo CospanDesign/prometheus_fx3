@@ -121,29 +121,33 @@ void setup_output_gpio(uint32_t pinnum,
 void gpio_out_thread_entry (uint32_t input){
     CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
 
-    /* Initialize GPIO module. */
-    gpio_init ();
+    retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
+    if (retval != CY_U3P_SUCCESS){
+        CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
+        CyFxAppErrorHandler(retval);
+    }
 
     for (;;){
+        CyU3PThreadSleep(2000);
+        /*
         retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
         if (retval != CY_U3P_SUCCESS){
-            /* Error handling */
             CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
             CyFxAppErrorHandler(retval);
         }
         CyU3PDebugPrint (0, "LED went on");
-        /* Wait for two seconds */
+        //Wait for 2 seconds
         CyU3PThreadSleep(2000);
 
         retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
         if (retval != CY_U3P_SUCCESS){
-            /* Error handling */
             CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
             CyFxAppErrorHandler(retval);
         }
         CyU3PDebugPrint (0, "LED went off");
-        /* Wait for two seconds */
+        //Wait for 2 seconds
         CyU3PThreadSleep(2000);
+        */
     }
 }
 
@@ -184,24 +188,24 @@ void gpio_init(){
 
     retval = CyU3PGpioInit(&gpio_clock, gpio_interrupt);
     if (retval != 0) {
-        CyFxAppErrorHandler(retval);
+      CyU3PDebugPrint(4, "gpio_init: Failed to initialize the GPIO: Error Code: %d", retval);
+      CyFxAppErrorHandler(retval);
     }
 
     //Configure Input Pins
     //               Name                 Pull Up  Pull Down  Override
     setup_input_gpio(PROC_BUTTON,         CyFalse, CyFalse,   CyTrue);
-    //setup_input_gpio(DONE,                CyFalse, CyFalse,   CyFalse);
-    //setup_input_gpio(INIT_N,              CyFalse, CyFalse,   CyFalse);
+    setup_input_gpio(DONE,                CyFalse, CyFalse,   CyFalse);
+    setup_input_gpio(INIT_N,              CyFalse, CyFalse,   CyFalse);
     //setup_input_gpio(FMC_DETECT_N,        CyFalse, CyFalse,   CyFalse);
     //setup_input_gpio(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyFalse);
 
     //Configure Output Pins
     //                Name                Default   Override
     setup_output_gpio(FPGA_SOFT_RESET,    CyFalse,  CyFalse);
-    //setup_output_gpio(UART_EN,            CyFalse,  CyTrue);
+    setup_output_gpio(UART_EN,            CyFalse,  CyFalse);
     //setup_output_gpio(OTG_5V_EN,          CyFalse,  CyTrue);
     //setup_output_gpio(POWER_SELECT_0,     CyFalse,  CyTrue);
     //setup_output_gpio(POWER_SELECT_1,     CyFalse,  CyTrue);
     //setup_output_gpio(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
-
 }

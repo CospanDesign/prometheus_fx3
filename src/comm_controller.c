@@ -1,0 +1,213 @@
+#include "cyu3system.h"
+#include "cyu3os.h"
+#include "cyu3dma.h"
+#include "cyu3error.h"
+#include "cyu3usb.h"
+#include "cyu3gpio.h"
+#include "cyu3spi.h"
+#include "cyu3uart.h"
+#include "cyu3gpif.h"
+#include "cyu3pib.h"
+#include "pib_regs.h"
+
+#include "prometheus.h"
+#include "cypress_usb_defines.h"
+#include "cyfxgpif2config.h"
+
+
+CyBool_t COMM_APP_ACTIVE = CyFalse;      /* Whether the loopback application is active or not. */
+CyU3PDmaChannel COMM_CHANNEL_USB_TO_GPIF;
+CyU3PDmaChannel COMM_CHANNEL_GPIF_TO_USB;
+
+void comm_config_start(void){
+  uint16_t size = 0;
+  CyU3PEpConfig_t ep_config;
+  CyU3PDmaChannelConfig_t dma_config;
+  CyU3PReturnStatus_t retval  = CY_U3P_SUCCESS;
+  CyU3PUSBSpeed_t usb_speed = CyU3PUsbGetSpeed();
+
+  //Identify the USB Speed
+  switch (usb_speed){
+    case CY_U3P_FULL_SPEED:
+      size = 64;
+      break;
+    case CY_U3P_HIGH_SPEED:
+      size = 512;
+      break;
+    case CY_U3P_SUPER_SPEED:
+      size = 1024;
+      break;
+    default:
+      CyU3PDebugPrint(4, "Error! Invalid USB Speed.");
+      CyFxAppErrorHandler(CY_U3P_ERROR_FAILURE);
+  }
+  CyU3PMemSet ((uint8_t *) &ep_config, 0, sizeof(ep_config));
+  ep_config.enable    = CyTrue;
+  ep_config.epType    = CY_U3P_USB_EP_BULK;
+  ep_config.burstLen  = BURST_LEN;      //XXX: This is defined within the promtheus.h, Not sure how to set this
+  ep_config.streams   = 0;              //XXX: I think this is related to USB 3.0 Super Speed
+  ep_config.pcktSize  = size;
+
+  //Configure Producer
+  retval = CyU3PSetEpConfig(CY_FX_EP_PRODUCER, &ep_config);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "com_config_start: Error setting up producer endpoint: Error code: %d", retval);
+  }
+  //Configure Consumer
+  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "com_config_start: Error setting up consumer endpoint: Error code: %d", retval);
+  }
+
+  //Create a DMA Auto Channel
+  CyU3PMemSet ((uint8_t *) &dma_config, 0, sizeof(dma_config));
+  dma_config.size =  DMA_BUF_SIZE * size; //Increase bufer size for higher performance
+  dma_config.count = CY_FX_EP_COMM_DMA_BUF_COUNT_U_2_P;
+  dma_config.prodSckId = CY_FX_EP_PRODUCER_USB_SOCKET;
+  dma_config.consSckId = CY_FX_EP_CONSUMER_PPORT_SOCKET;
+  dma_config.dmaMode = CY_U3P_DMA_MODE_BYTE;
+
+  //Enable a callback for the producer event
+  dma_config.notification = 0;
+  dma_config.cb = NULL;
+  dma_config.prodHeader = 0;
+  dma_config.prodFooter = 0;
+  dma_config.consHeader = 0;
+  dma_config.prodAvailCount = 0;
+
+  retval = CyU3PDmaChannelCreate(&COMM_CHANNEL_USB_TO_GPIF,
+                                 CY_U3P_DMA_TYPE_AUTO,
+                                 &dma_config);
+  if (retval != CY_U3P_SUCCESS) {
+    CyU3PDebugPrint(4, "com_config_start: Error creating DMA USB to GPIF DMA Channel: Error code: %d", retval);
+    CyFxAppErrorHandler(retval);
+  }
+
+  //Create Consumer Endpoint
+  dma_config.size = DMA_BUF_SIZE * size; //Increase buffer size for higher performance
+  dma_config.count = CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U;  //Increate buffer count for higher performacne
+  dma_config.prodSckId = CY_FX_EP_PRODUCER_PPORT_SOCKET;
+  dma_config.consSckId = CY_FX_EP_CONSUMER_USB_SOCKET;
+  dma_config.cb = NULL;
+  retval = CyU3PDmaChannelCreate(&COMM_CHANNEL_GPIF_TO_USB,
+                                 CY_U3P_DMA_TYPE_AUTO,
+                                 &dma_config);
+
+  if (retval != CY_U3P_SUCCESS) {
+    CyU3PDebugPrint(4, "com_config_start: Error creating DMA GPIF to USB DMA Channel: Error code: %d", retval);
+    CyFxAppErrorHandler(retval);
+  }
+
+  //Clear out the endpoints
+  CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
+  CyU3PUsbFlushEp(CY_FX_EP_CONSUMER);
+
+  //Set DMA USB to GPIF Channel Transfer Size
+  retval = CyU3PDmaChannelSetXfer (&COMM_CHANNEL_USB_TO_GPIF,
+                                   CY_FX_COMM_DMA_TX_SIZE);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "com_config_start: Error setting DMA USB to GPIF DMA Channel Transfer Size: Error code: %d", retval);
+    CyFxAppErrorHandler(retval);
+
+  }
+  //Set DMA GPIF to USB Channel Transfer Size
+  retval = CyU3PDmaChannelSetXfer(&COMM_CHANNEL_GPIF_TO_USB,
+                                  CY_FX_COMM_DMA_RX_SIZE);
+
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "com_config_start: Error setting DMA GPIF to USB DMA Channel Transfer Size: Error code: %d", retval);
+    CyFxAppErrorHandler(retval);
+
+  }
+
+  COMM_APP_ACTIVE = CyTrue;
+}
+
+void comm_config_stop(void){
+  CyU3PEpConfig_t ep_config;
+  CyU3PReturnStatus_t retval  = CY_U3P_SUCCESS;
+  COMM_APP_ACTIVE = CyFalse;
+
+  //Update the flag
+  COMM_APP_ACTIVE = CyFalse;
+  //Flush the Endpoints
+  CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
+  CyU3PUsbFlushEp(CY_FX_EP_CONSUMER);
+
+  //Destroy the channel
+  CyU3PDmaChannelDestroy(&COMM_CHANNEL_USB_TO_GPIF);
+  CyU3PDmaChannelDestroy(&COMM_CHANNEL_GPIF_TO_USB);
+
+  //Disable the endpoints
+  CyU3PMemSet((uint8_t *) &ep_config, 0, sizeof(ep_config));
+
+  if (retval != CY_U3P_SUCCESS) {
+    CyU3PDebugPrint(4, "comm_config_stop: Failed to clear the endpoint structure: Error code: %d", retval);
+    CyFxAppErrorHandler (retval);
+  }
+
+  ep_config.enable = CyFalse;
+  retval = CyU3PSetEpConfig(CY_FX_EP_PRODUCER, &ep_config);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "comm_config_stop: Failed to disable the comm producer endpoint: Error code: %d", retval);
+  }
+
+  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "comm_config_stop: Failed to disable the comm consumer endpoint: Error code: %d", retval);
+  }
+}
+void comm_config_init(void){
+
+	CyU3PIoMatrixConfig_t io_cfg;
+	CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
+
+  CyU3PPibClock_t pib_clock;
+
+	io_cfg.useUart          = CyTrue;
+  io_cfg.useI2C           = CyTrue;
+  io_cfg.useI2S           = CyFalse;
+  io_cfg.useSpi           = CyFalse;
+  io_cfg.isDQ32Bit        = CyTrue;
+  io_cfg.lppMode          = CY_U3P_IO_MATRIX_LPP_DEFAULT;
+
+  io_cfg.gpioSimpleEn[0]  = LOW_GPIO_DIR;
+  io_cfg.gpioSimpleEn[1]  = HIGH_GPIO_DIR;
+  io_cfg.gpioComplexEn[0] = 0;
+  io_cfg.gpioComplexEn[1] = 0;
+
+  retval = CyU3PDeviceConfigureIOMatrix (&io_cfg);
+  if (retval != CY_U3P_SUCCESS){
+  	while (1);		/* Cannot recover from this error. */
+  }
+
+  //setup the P-Block
+  pib_clock.clkDiv      = 2; //XXX: I need to figure out how to setup 100MHz clock (input from the FPGA)
+  pib_clock.clkSrc      = CY_U3P_SYS_CLK; //XXX: How to use the external clock?
+  pib_clock.isHalfDiv   = CyFalse;
+  pib_clock.isDllEnable = CyFalse;
+  retval = CyU3PPibInit(CyTrue, &pib_clock);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "comm_config_init: P-Port Initialization Failed: Error code: %d", retval);
+    CyFxAppErrorHandler (retval);
+  }
+
+  //Load the GPIF Configuration generated from the GPIF II Designer
+  retval = CyU3PGpifLoad(&CyFxGpifConfig);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "comm_config_init: Failed to load GPIF configuration: Error code: %d", retval);
+    CyFxAppErrorHandler(retval);
+  }
+
+  //Confiugre the sockets
+  CyU3PGpifSocketConfigure(0, CY_U3P_PIB_SOCKET_0, 6, CyFalse, 1);
+  CyU3PGpifSocketConfigure(3, CY_U3P_PIB_SOCKET_3, 6, CyFalse, 1);
+
+  //Start the state machine
+  retval = CyU3PGpifSMStart (START, ALPHA_START);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "comm_config_init: Failed to start GPIF state machine: Error code: %d", retval);
+    CyFxAppErrorHandler(retval);
+  }
+
+}

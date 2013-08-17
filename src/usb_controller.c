@@ -7,9 +7,12 @@
 #include "cyu3uart.h"
 
 #include "usb_controller.h"
+#include "prometheus.h"
 
 //Found in the main file
-extern CyBool_t reset_device;                         /* Request to reset the FX3 device. */
+extern CyU3PEvent     main_event;                     /* Events that change the behavior of the system*/
+extern CyBool_t       CONFIG_DONE;                    /* FPGA Configuration Finished */
+extern uint32_t       file_length;
 
 CyBool_t is_app_active = CyFalse;                     /* Whether the loopback application is active or not. */
 CyU3PDmaChannel bulk_dma_channel_handle;              /* DMA Channel handle */
@@ -32,7 +35,7 @@ void usb_event_cb (
         case CY_U3P_USB_EVENT_RESET:
         case CY_U3P_USB_EVENT_DISCONNECT:
             /* Stop the loop back function. */
-            bulk_app_stop ();
+            usb_stop ();
             /* Drop current U1/U2 enable state values. */
             device_status = 0;
             break;
@@ -49,7 +52,7 @@ void usb_event_cb (
  *  configured  and the DMA pipe is setup in this function
  */
 
-void bulk_app_start(void){
+void usb_start(void){
     uint16_t size = 0;
     //Debug Size is for the Debug interface
     uint16_t debug_size = 0;
@@ -91,7 +94,7 @@ void bulk_app_start(void){
     epCfg.burstLen = 1;
     epCfg.streams = 0;
     epCfg.pcktSize = size;
-    
+
     //Consumer Endpoint
     retval = CyU3PSetEpConfig(CY_FX_EP_DEBUG_IN, &epCfg);
     if (retval != CY_U3P_SUCCESS) {
@@ -139,9 +142,9 @@ void bulk_app_start(void){
     /* Create a DMA Auto Channel between two sockets of the U port.
      * DMA size is set based on the USB speed. */
     dmaCfg.size = size;
-    dmaCfg.count = CY_FX_BULKLP_DMA_BUF_COUNT;
-    dmaCfg.prodSckId = CY_FX_EP_PRODUCER_SOCKET;
-    dmaCfg.consSckId = CY_FX_EP_CONSUMER_SOCKET;
+    dmaCfg.count = CY_FX_COMM_DMA_BUF_COUNT;
+    dmaCfg.prodSckId = CY_FX_EP_PRODUCER_PPORT_SOCKET;
+    dmaCfg.consSckId = CY_FX_EP_CONSUMER_PPORT_SOCKET;
     dmaCfg.dmaMode = CY_U3P_DMA_MODE_BYTE;
     dmaCfg.notification = 0;
     dmaCfg.cb = NULL;
@@ -162,7 +165,7 @@ void bulk_app_start(void){
     CyU3PUsbFlushEp(CY_FX_EP_CONSUMER);
 
     /* Set DMA Channel transfer size */
-    retval = CyU3PDmaChannelSetXfer (&bulk_dma_channel_handle, CY_FX_BULKLP_DMA_TX_SIZE);
+    retval = CyU3PDmaChannelSetXfer (&bulk_dma_channel_handle, CY_FX_COMM_DMA_TX_SIZE);
     if (retval != CY_U3P_SUCCESS) {
         CyU3PDebugPrint (4, "CyU3PDmaChannelSetXfer Failed, Error code = %d\n", retval);
         CyFxAppErrorHandler(retval);
@@ -178,7 +181,7 @@ void bulk_app_start(void){
 /* This function stops the bulk loop application. This shall be called whenever
  * a RESET or DISCONNECT event is received from the USB host. The endpoints are
  * disabled and the DMA pipe is destroyed by this function. */
-void bulk_app_stop (void){
+void usb_stop (void){
     CyU3PEpConfig_t epCfg;
     CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
 
@@ -357,7 +360,7 @@ CyBool_t usb_clear_feature (
 
             CyU3PUsbResetEp (CY_FX_EP_PRODUCER);
             CyU3PUsbResetEp (CY_FX_EP_CONSUMER);
-            CyU3PDmaChannelSetXfer (&bulk_dma_channel_handle, CY_FX_BULKLP_DMA_TX_SIZE);
+            CyU3PDmaChannelSetXfer (&bulk_dma_channel_handle, CY_FX_COMM_DMA_TX_SIZE);
         }
 
         /* Clear stall on the endpoint. */
@@ -496,16 +499,58 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
     wIndex   = ((setupdat1 & CY_U3P_USB_INDEX_MASK)   >> CY_U3P_USB_INDEX_POS);
     wLength  = ((setupdat1 & CY_U3P_USB_LENGTH_MASK)  >> CY_U3P_USB_LENGTH_POS);
 
-    /* The only supported vendor command is to reset the FX3 device. */
-    if (bType == CY_U3P_USB_VENDOR_RQT){
-        if ((bRequest == 0xE0) && (wLength == 0)){
-            reset_device = CyTrue;
-            CyU3PUsbAckSetup ();
-            return CyTrue;
-        }
 
-        return CyFalse;
+    /*Three commands are available to the user
+     * Reset to Boot: Resets the USB Device to a programmable setup
+     * FPGA Configurtion mode: Switch to the mode in which you can program the FPGA
+     * COMM mode: Switch to a high speed parallel bus mode
+     */
+    if (bType == CY_U3P_USB_VENDOR_RQT){
+      switch (bRequest) {
+        case (RESET_TO_BOOTMODE):
+          if (wLength > 0){
+            break;
+          }
+
+          //Reset to boot mode
+          CyU3PEventSet(&main_event, RESET_PROC_BOOT_EVENT, CYU3P_EVENT_OR);
+          CyU3PUsbAckSetup();
+          return CyTrue; //Return that we handled the request
+
+
+        case (ENTER_FPGA_CONFIG_MODE):
+          if ((bReqType & 0x80) != 0) {
+            break;
+          }
+          //What is this flag for?
+          //Extract the size from byte array
+          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+          file_length = (uint32_t)  ((ep0_buffer[3] << 24) |
+                                     (ep0_buffer[2] << 16) |
+                                     (ep0_buffer[1] << 8)  |
+                                      ep0_buffer[0]);
+          CONFIG_DONE = CyTrue;
+          //Set CONFIG FPGA APP Start Event to start configurin the FPGA
+          CyU3PEventSet (&main_event, ENTER_FPGA_CONFIG_MODE_EVENT, CYU3P_EVENT_OR);
+          return CyTrue;  //Return that we handled the request
+
+        case (ENTER_FPGA_COMM_MODE):
+          if ((bReqType & 0x80) != 0x80){
+            break;
+          }
+          ep0_buffer[0] == CONFIG_DONE;
+          CyU3PUsbSendEP0Data (wLength, ep0_buffer);
+          //Switch to Slave FIFO interface when FPGA is configured successfully
+          if (CONFIG_DONE) {
+            CyU3PEventSet(&main_event, ENTER_FPGA_COMM_MODE_EVENT, CYU3P_EVENT_OR);
+            return CyTrue; //Return that we handled the request
+          }
+          break;
+      }
+      return CyFalse;
     }
+
+
     //Don't need to specify CY_U3P_USB_STANDARD_RQT because the Vendor Request returned
 
     /* Identify and handle setup request. */
@@ -575,17 +620,17 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
                  * it before re-enabling it. */
                 usb_configuration = wValue;
                 if (is_app_active){
-                    bulk_app_stop ();
+                    usb_stop ();
                 }
                 /* Start the loop back function. */
-                bulk_app_start ();
+                usb_start ();
             }
             else{
             	if (wValue == 0){
                     /* Stop the loop back function. */
                     usb_configuration = wValue;
                     if (is_app_active){
-                        bulk_app_stop ();
+                        usb_stop ();
                     }
             	}
             	else{
@@ -656,7 +701,7 @@ CyBool_t lpm_request_cb (CyU3PUsbLinkPowerMode link_mode){
 /* This function initializes the USB Module, sets the enumeration descriptors.
  * This function does not start the bulk streaming and this is done only when
  * SET_CONF event is received. */
-void bulk_app_init (void) {
+void usb_init (void) {
     CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
 
     /* Start the USB functionality. */
