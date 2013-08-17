@@ -1,18 +1,5 @@
-/* This file illustrates the bulkloop application example using the DMA AUTO mode */
 
-/*
-   This example illustrates a loopback mechanism between two USB bulk endpoints. The example comprises of
-   vendor class USB enumeration descriptors with 2 bulk endpoints. A bulk OUT endpoint acts as the producer
-   of data from the host. A bulk IN endpint acts as the consumer of data to the host.
-
-   The loopback is achieved with the help of a DMA AUTO channel. DMA AUTO channel is created between the
-   producer USB bulk endpoint and the consumer USB bulk endpoint. Data is transferred from the host into
-   the producer endpoint which is then directly transferred to the consumer endpoint by the DMA engine.
-   CPU is not involved in the data transfer.
-
-   The DMA buffer size is defined based on the USB speed. 64 for full speed, 512 for high speed and 1024
-   for super speed. CY_FX_COMM_DMA_BUF_COUNT in the header file defines the number of DMA buffers.
- */
+//Author: dave.mccoy@cospandesign.com
 
 #include "cyu3system.h"
 #include "cyu3os.h"
@@ -102,13 +89,13 @@ void CyFxApplicationDefine (void){
     /* Create the thread for the application */
     retvalue = CyU3PThreadCreate (
         &main_thread,                 /* Bulk loop App Thread structure */
-        "21:Bulk_loop_AUTO",          /* Thread ID and Thread name */
+        "21:Main_Thread",             /* Thread ID and Thread name */
         main_thread_entry,            /* Bulk loop App Thread Entry function */
         0,                            /* No input parameter to thread */
         ptr,                          /* Pointer to the allocated thread stack */
-        CY_FX_COMM_THREAD_STACK,    /* Bulk loop App Thread stack size */
-        CY_FX_COMM_THREAD_PRIORITY, /* Bulk loop App Thread priority */
-        CY_FX_COMM_THREAD_PRIORITY, /* Bulk loop App Thread priority */
+        CY_FX_COMM_THREAD_STACK,      /* Bulk loop App Thread stack size */
+        CY_FX_COMM_THREAD_PRIORITY,   /* Bulk loop App Thread priority */
+        CY_FX_COMM_THREAD_PRIORITY,   /* Bulk loop App Thread priority */
         CYU3P_NO_TIME_SLICE,          /* No time slice for the application thread */
         CYU3P_AUTO_START              /* Start the Thread immediately */
         );
@@ -170,7 +157,9 @@ void CyFxApplicationDefine (void){
         while(1);
     }
 }
+
 /*
+ * main (pregame) This sets up the RTOS before the RTOS is an RTOS (deep)
  * Sets up:
  *
  * Clocks
@@ -194,10 +183,6 @@ int main (void){
         goto handle_fatal_error;
     }
 
-    /* Configure the IO matrix for the device. On the FX3 DVK board, the COM port
-     * is connected to the IO(53:56). This means that either DQ32 mode should be
-     * selected or lppMode should be set to UART_ONLY. Here we are choosing
-     * UART_ONLY configuration. */
     io_cfg.isDQ32Bit        = CyFalse;
     io_cfg.useUart          = CyTrue;
     io_cfg.useI2C           = CyTrue;
@@ -212,7 +197,6 @@ int main (void){
 
     io_cfg.gpioComplexEn[0] = 0;
     io_cfg.gpioComplexEn[1] = 0;
-
 
     status = CyU3PDeviceConfigureIOMatrix (&io_cfg);
     if (status != CY_U3P_SUCCESS){
