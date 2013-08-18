@@ -67,6 +67,8 @@ void usb_start(void){
    * create a DMA channel and start the transfer on this. */
 
   /* Based on the Bus Speed configure the endpoint packet size */
+  debug_init();
+  /*
   switch (usbSpeed){
     case CY_U3P_FULL_SPEED:
       size = 64;
@@ -119,7 +121,6 @@ void usb_start(void){
     CyFxAppErrorHandler (retval);
   }
 
-/*
   //Setup The Bulk
   CyU3PMemSet ((uint8_t *)&epCfg, 0, sizeof (epCfg));
   epCfg.enable = CyTrue;
@@ -185,61 +186,61 @@ void usb_start(void){
  * a RESET or DISCONNECT event is received from the USB host. The endpoints are
  * disabled and the DMA pipe is destroyed by this function. */
 void usb_stop (void){
-    CyU3PEpConfig_t epCfg;
-    CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
+  CyU3PEpConfig_t epCfg;
+  CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
 
-    //Update the flag
-    if (FPGA_CONFIG_APP_ACTIVE){
-      //Disable the FPGA
-      fpga_config_stop();
-    }
-    if (COMM_APP_ACTIVE){
-      //Disable the FPGA comm application
-      comm_config_stop();
-    }
-    BASE_APP_ACTIVE = CyFalse;
+  //Update the flag
+  if (FPGA_CONFIG_APP_ACTIVE){
+    //Disable the FPGA
+    fpga_config_stop();
+  }
+  if (COMM_APP_ACTIVE){
+    //Disable the FPGA comm application
+    comm_config_stop();
+  }
+  BASE_APP_ACTIVE = CyFalse;
 
-    CyU3PDebugDeInit ();
-    /*
-    //Flush the endpoint memory
-    CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
-    CyU3PUsbFlushEp(CY_FX_EP_CONSUMER);
-    CyU3PUsbFlushEp(CY_FX_EP_DEBUG_IN);
-    CyU3PUsbFlushEp(CY_FX_EP_DEBUG_OUT);
-
-
-    //Destroy the channel
-    CyU3PDmaChannelDestroy (&bulk_dma_channel_handle);
-
-    //Disable endpoints
-    CyU3PMemSet ((uint8_t *)&epCfg, 0, sizeof (epCfg));
-    epCfg.enable = CyFalse;
+  CyU3PDebugDeInit ();
+  /*
+  //Flush the endpoint memory
+  CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
+  CyU3PUsbFlushEp(CY_FX_EP_CONSUMER);
+  CyU3PUsbFlushEp(CY_FX_EP_DEBUG_IN);
+  CyU3PUsbFlushEp(CY_FX_EP_DEBUG_OUT);
 
 
-    //Debug Input
-    retval = CyU3PSetEpConfig(CY_FX_EP_DEBUG_IN, &epCfg);
-    if (retval != CY_U3P_SUCCESS) {
-        CyFxAppErrorHandler (retval);
-    }
+  //Destroy the channel
+  CyU3PDmaChannelDestroy (&bulk_dma_channel_handle);
 
-    //Debug Output
-    retval = CyU3PSetEpConfig(CY_FX_EP_DEBUG_OUT, &epCfg);
-    if (retval != CY_U3P_SUCCESS) {
-        CyFxAppErrorHandler (retval);
-    }
+  //Disable endpoints
+  CyU3PMemSet ((uint8_t *)&epCfg, 0, sizeof (epCfg));
+  epCfg.enable = CyFalse;
 
-    //Producer Endpoint Configuration
-    retval = CyU3PSetEpConfig(CY_FX_EP_PRODUCER, &epCfg);
-    if (retval != CY_U3P_SUCCESS){
-        CyFxAppErrorHandler (retval);
-    }
 
-    //Consumer endpoint configuration
-    retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &epCfg);
-    if (retval != CY_U3P_SUCCESS){
-        CyFxAppErrorHandler (retval);
-    }
-    */
+  //Debug Input
+  retval = CyU3PSetEpConfig(CY_FX_EP_DEBUG_IN, &epCfg);
+  if (retval != CY_U3P_SUCCESS) {
+      CyFxAppErrorHandler (retval);
+  }
+
+  //Debug Output
+  retval = CyU3PSetEpConfig(CY_FX_EP_DEBUG_OUT, &epCfg);
+  if (retval != CY_U3P_SUCCESS) {
+      CyFxAppErrorHandler (retval);
+  }
+
+  //Producer Endpoint Configuration
+  retval = CyU3PSetEpConfig(CY_FX_EP_PRODUCER, &epCfg);
+  if (retval != CY_U3P_SUCCESS){
+      CyFxAppErrorHandler (retval);
+  }
+
+  //Consumer endpoint configuration
+  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &epCfg);
+  if (retval != CY_U3P_SUCCESS){
+      CyFxAppErrorHandler (retval);
+  }
+  */
 }
 
 
@@ -247,60 +248,60 @@ void usb_stop (void){
  */
 CyBool_t usb_set_feature (uint8_t bTarget, uint16_t wValue, uint16_t wIndex){
 
-    CyU3PUSBSpeed_t usbSpeed = CyU3PUsbGetSpeed();
-    CyBool_t isHandled = CyFalse;
+  CyU3PUSBSpeed_t usbSpeed = CyU3PUsbGetSpeed();
+  CyBool_t isHandled = CyFalse;
 
-    if (bTarget == CY_U3P_USB_TARGET_DEVICE){
-        switch (wValue & 0xFF){
-            case CY_U3P_USB2_FS_REMOTE_WAKE:
-                device_status |= 0x02;
-                /* Fall-through here. */
-            case CY_U3P_USB2_FS_TEST_MODE:
-                if (usbSpeed != CY_U3P_SUPER_SPEED){
-                    isHandled = CyTrue;
-                }
-                break;
-
-            case CY_U3P_USB3_FS_U1_ENABLE:
-                if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
-                    device_status |= 0x04;
-                    isHandled = CyTrue;
-                }
-                break;
-
-            case CY_U3P_USB3_FS_U2_ENABLE:
-                if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
-                    device_status |= 0x08;
-                    isHandled = CyTrue;
-                }
-                break;
-            default:
-                isHandled = CyFalse;
-                break;
+  if (bTarget == CY_U3P_USB_TARGET_DEVICE){
+    switch (wValue & 0xFF){
+      case CY_U3P_USB2_FS_REMOTE_WAKE:
+        device_status |= 0x02;
+        /* Fall-through here. */
+      case CY_U3P_USB2_FS_TEST_MODE:
+        if (usbSpeed != CY_U3P_SUPER_SPEED){
+          isHandled = CyTrue;
         }
-    }
-    else if (bTarget == CY_U3P_USB_TARGET_INTF){
-        /* Need to handle SET_FEATURE(FUNCTION_SUSPEND) requests. We allow this request to pass
-           if the USB device is in configured state and fail it otherwise.  */
-        if ((BASE_APP_ACTIVE) && (wValue == 0))
-            CyU3PUsbAckSetup ();
-        else
-            CyU3PUsbStall (0, CyTrue, CyFalse);
+        break;
 
-        isHandled = CyTrue;
-    }
-    else if ((bTarget == CY_U3P_USB_TARGET_ENDPT) &&
-            (wValue == CY_U3P_USBX_FS_EP_HALT)) {
-        /* Stall the endpoint */
-        CyU3PUsbStall (wIndex, CyTrue, CyFalse);
-        isHandled = CyTrue;
-    }
-    else
-    {
+      case CY_U3P_USB3_FS_U1_ENABLE:
+        if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
+          device_status |= 0x04;
+          isHandled = CyTrue;
+        }
+        break;
+
+      case CY_U3P_USB3_FS_U2_ENABLE:
+        if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
+          device_status |= 0x08;
+          isHandled = CyTrue;
+        }
+        break;
+      default:
         isHandled = CyFalse;
+        break;
     }
+  }
+  else if (bTarget == CY_U3P_USB_TARGET_INTF){
+    /* Need to handle SET_FEATURE(FUNCTION_SUSPEND) requests. We allow this request to pass
+       if the USB device is in configured state and fail it otherwise.  */
+    if ((BASE_APP_ACTIVE) && (wValue == 0))
+      CyU3PUsbAckSetup ();
+    else
+      CyU3PUsbStall (0, CyTrue, CyFalse);
 
-    return isHandled;
+    isHandled = CyTrue;
+  }
+  else if ((bTarget == CY_U3P_USB_TARGET_ENDPT) &&
+          (wValue == CY_U3P_USBX_FS_EP_HALT)) {
+    /* Stall the endpoint */
+    CyU3PUsbStall (wIndex, CyTrue, CyFalse);
+    isHandled = CyTrue;
+  }
+  else
+  {
+    isHandled = CyFalse;
+  }
+
+  return isHandled;
 }
 
 /* Handle the CLEAR_FEATURE request. */
@@ -308,86 +309,83 @@ CyBool_t usb_clear_feature (
         uint8_t bTarget,
         uint16_t wValue,
         uint16_t wIndex){
-    CyU3PUSBSpeed_t usbSpeed = CyU3PUsbGetSpeed();
-    CyBool_t isHandled = CyFalse;
+  CyU3PUSBSpeed_t usbSpeed = CyU3PUsbGetSpeed();
+  CyBool_t isHandled = CyFalse;
 
-    if (bTarget == CY_U3P_USB_TARGET_DEVICE){
-        switch (wValue & 0xFF){
-            case CY_U3P_USB2_FS_REMOTE_WAKE:
-                device_status &= 0xFD;
-                /* Fall-through here. */
-            case CY_U3P_USB2_FS_TEST_MODE:
-                if (usbSpeed != CY_U3P_SUPER_SPEED){
-                    isHandled = CyTrue;
-                }
-                break;
-
-            case CY_U3P_USB3_FS_U1_ENABLE:
-                if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
-                    device_status &= 0xFB;
-                    isHandled = CyTrue;
-                }
-                break;
-
-            case CY_U3P_USB3_FS_U2_ENABLE:
-                if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
-                    device_status &= 0xF7;
-                    isHandled = CyTrue;
-                }
-                break;
-
-            default:
-                isHandled = CyFalse;
-                break;
+  if (bTarget == CY_U3P_USB_TARGET_DEVICE){
+    switch (wValue & 0xFF){
+      case CY_U3P_USB2_FS_REMOTE_WAKE:
+        device_status &= 0xFD;
+        /* Fall-through here. */
+      case CY_U3P_USB2_FS_TEST_MODE:
+        if (usbSpeed != CY_U3P_SUPER_SPEED){
+          isHandled = CyTrue;
         }
-    }
-    else if (bTarget == CY_U3P_USB_TARGET_INTF){
-        /* Need to handle CLEAR_FEATURE(FUNCTION_SUSPEND) requests. We allow this request to pass
-           if the USB device is in configured state and fail it otherwise.  */
-        if ((BASE_APP_ACTIVE) && (wValue == 0))
-            CyU3PUsbAckSetup ();
-        else
-            CyU3PUsbStall (0, CyTrue, CyFalse);
+        break;
 
-        isHandled = CyTrue;
-    }
-    else if ((bTarget == CY_U3P_USB_TARGET_ENDPT) &&
-            (wValue == CY_U3P_USBX_FS_EP_HALT)){
-        /* If the application is active make sure that all sockets and
-         * DMA buffers are flushed and cleaned. If more than one enpoint
-         * is linked to the same DMA channel, then reset all the affected
-         * endpoint pipes. */
-        if (BASE_APP_ACTIVE){
-            //Flush/Reset Debug Endpoints
-            CyU3PUsbFlushEp (CY_FX_EP_DEBUG_IN);
-            CyU3PUsbFlushEp (CY_FX_EP_DEBUG_OUT);
-            CyU3PUsbResetEp (CY_FX_EP_DEBUG_IN);
-            CyU3PUsbResetEp (CY_FX_EP_DEBUG_OUT);
-
-
-            CyU3PDmaChannelReset (&bulk_dma_channel_handle);
-            CyU3PUsbFlushEp (CY_FX_EP_PRODUCER);
-            CyU3PUsbFlushEp (CY_FX_EP_CONSUMER);
-
-
-            CyU3PUsbResetEp (CY_FX_EP_PRODUCER);
-            CyU3PUsbResetEp (CY_FX_EP_CONSUMER);
-            CyU3PDmaChannelSetXfer (&bulk_dma_channel_handle, CY_FX_COMM_DMA_TX_SIZE);
+      case CY_U3P_USB3_FS_U1_ENABLE:
+        if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
+          device_status &= 0xFB;
+          isHandled = CyTrue;
         }
+        break;
 
-        /* Clear stall on the endpoint. */
-        CyU3PUsbStall (wIndex, CyFalse, CyTrue);
-        isHandled = CyTrue;
-    }
-    else{
+      case CY_U3P_USB3_FS_U2_ENABLE:
+        if ((usbSpeed == CY_U3P_SUPER_SPEED) && (BASE_APP_ACTIVE)){
+          device_status &= 0xF7;
+          isHandled = CyTrue;
+        }
+        break;
+
+      default:
         isHandled = CyFalse;
+        break;
+    }
+  }
+  else if (bTarget == CY_U3P_USB_TARGET_INTF){
+    /* Need to handle CLEAR_FEATURE(FUNCTION_SUSPEND) requests. We allow this request to pass
+       if the USB device is in configured state and fail it otherwise.  */
+    if ((BASE_APP_ACTIVE) && (wValue == 0))
+      CyU3PUsbAckSetup ();
+    else
+      CyU3PUsbStall (0, CyTrue, CyFalse);
+
+    isHandled = CyTrue;
+  }
+  else if ((bTarget == CY_U3P_USB_TARGET_ENDPT) &&
+        (wValue == CY_U3P_USBX_FS_EP_HALT)){
+    /* If the application is active make sure that all sockets and
+     * DMA buffers are flushed and cleaned. If more than one enpoint
+     * is linked to the same DMA channel, then reset all the affected
+     * endpoint pipes. */
+    if (BASE_APP_ACTIVE){
+      //Flush/Reset Debug Endpoints
+      CyU3PUsbFlushEp (CY_FX_EP_DEBUG_IN);
+      CyU3PUsbFlushEp (CY_FX_EP_DEBUG_OUT);
+      CyU3PUsbResetEp (CY_FX_EP_DEBUG_IN);
+      CyU3PUsbResetEp (CY_FX_EP_DEBUG_OUT);
+
+
+      CyU3PDmaChannelReset (&bulk_dma_channel_handle);
+      CyU3PUsbFlushEp (CY_FX_EP_PRODUCER);
+      CyU3PUsbFlushEp (CY_FX_EP_CONSUMER);
+
+
+      CyU3PUsbResetEp (CY_FX_EP_PRODUCER);
+      CyU3PUsbResetEp (CY_FX_EP_CONSUMER);
+      CyU3PDmaChannelSetXfer (&bulk_dma_channel_handle, CY_FX_COMM_DMA_TX_SIZE);
     }
 
-    return isHandled;
+    /* Clear stall on the endpoint. */
+    CyU3PUsbStall (wIndex, CyFalse, CyTrue);
+    isHandled = CyTrue;
+  }
+  else{
+    isHandled = CyFalse;
+  }
+
+  return isHandled;
 }
-
-
-
 
 /* Send the requested USB descriptor to the host. */
 CyU3PReturnStatus_t usb_send_descriptor (uint16_t wValue, uint16_t wIndex, uint16_t wLength)

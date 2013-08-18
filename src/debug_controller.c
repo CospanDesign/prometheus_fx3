@@ -10,54 +10,50 @@
 
 
 void uart_debug_init (void);
+
 void debug_init (void){
+  uint16_t size = 0;
+  CyU3PEpConfig_t ep_config;
+  CyU3PReturnStatus_t retvalue = CY_U3P_SUCCESS;
+  CyU3PUSBSpeed_t usb_speed = CyU3PUsbGetSpeed();
+  //uart_debug_init();
 
-    uint16_t size = 0;
-    CyU3PEpConfig_t ep_config;
-    CyU3PReturnStatus_t retvalue = CY_U3P_SUCCESS;
-    CyU3PUSBSpeed_t usb_speed = CyU3PUsbGetSpeed();
-    uart_debug_init();
+  //Get the USB Speed
+  switch (usb_speed) {
+    case CY_U3P_FULL_SPEED:
+      size = 64;
+      break;
 
-    //Get the USB Speed
-    /*
-    switch (usb_speed) {
-      case CY_U3P_FULL_SPEED:
-        size = 64;
-        break;
+    case CY_U3P_HIGH_SPEED:
+    case  CY_U3P_SUPER_SPEED:
+      size = 128;
+      break;
 
-      case CY_U3P_HIGH_SPEED:
-      case  CY_U3P_SUPER_SPEED:
-        size = 128;
-        break;
+    default:
+      CyFxAppErrorHandler (CY_U3P_ERROR_FAILURE);
+      break;
+  }
 
-      default:
-        CyFxAppErrorHandler (CY_U3P_ERROR_FAILURE);
-        break;
-    }
+  CyU3PMemSet((uint8_t *) &ep_config, 0, sizeof(ep_config));
+  ep_config.enable = CyTrue;
+  ep_config.epType = CY_U3P_USB_EP_INTR;
+  ep_config.burstLen = 1;
+  ep_config.streams = 0;
+  ep_config.pcktSize = size;
 
-    CyU3PMemSet((uint8_t *) &ep_config, 0, sizeof(ep_config));
-    ep_config.enable = CyTrue;
-    ep_config.epType = CY_U3P_USB_EP_INTR;
-    ep_config.burstLen = 1;
-    ep_config.streams = 0;
-    ep_config.pcktSize = size;
+  //Consumer Enpoint Configuration
+  retvalue = CyU3PSetEpConfig(CY_FX_EP_DEBUG_OUT, &ep_config);
+  if (retvalue != CY_U3P_SUCCESS) {
+    CyFxAppErrorHandler(retvalue);
+  }
 
-    //Consumer Enpoint Configuration
-    retvalue = CyU3PSetEpConfig(CY_FX_EP_DEBUG_OUT, &ep_config);
-    if (retvalue != CY_U3P_SUCCESS) {
-      CyFxAppErrorHandler(retvalue);
-    }
+  //Flush the endpoint memory
+  CyU3PUsbFlushEp(CY_FX_EP_DEBUG_OUT);
 
-    //Flush the endpoint memory
-    CyU3PUsbFlushEp(CY_FX_EP_DEBUG_OUT);
-
-    retvalue = CyU3PDebugInit(CY_FX_EP_DEBUG_OUT_SOCKET, 8);
-    if (retvalue != CY_U3P_SUCCESS) {
-      CyFxAppErrorHandler(retvalue);
-    }
-    //Update the status flag
-    //glIsApplnActive = CyTrue;
-    */
+  retvalue = CyU3PDebugInit(CY_FX_EP_DEBUG_OUT_SOCKET, 8);
+  if (retvalue != CY_U3P_SUCCESS) {
+    CyFxAppErrorHandler(retvalue);
+  }
 
 }
 

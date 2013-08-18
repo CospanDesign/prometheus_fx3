@@ -129,6 +129,7 @@ void gpio_out_thread_entry (uint32_t input){
 
     for (;;){
         CyU3PThreadSleep(2000);
+        //CyU3PDebugPrint (1, "Tick");
         /*
         retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
         if (retval != CY_U3P_SUCCESS){
@@ -165,11 +166,11 @@ void gpio_in_thread_entry (uint32_t input){
         if (retval == CY_U3P_SUCCESS){
             if (event_flag & CY_FX_GPIOAPP_GPIO_HIGH_EVENT){
                 /* Print the status of the pin */
-                CyU3PDebugPrint (2, "GPIO Went High\n");
+                CyU3PDebugPrint (2, "GPIO Went High");
             }
             else{
                 /* Print the status of the pin */
-                CyU3PDebugPrint (2, "GPIO Went Low\n");
+                CyU3PDebugPrint (2, "GPIO Went Low");
             }
         }
     }
@@ -195,17 +196,17 @@ void gpio_init(){
     //Configure Input Pins
     //               Name                 Pull Up  Pull Down  Override
     setup_input_gpio(PROC_BUTTON,         CyFalse, CyFalse,   CyTrue);
-    setup_input_gpio(DONE,                CyFalse, CyFalse,   CyFalse);
-    setup_input_gpio(INIT_N,              CyFalse, CyFalse,   CyFalse);
-    //setup_input_gpio(FMC_DETECT_N,        CyFalse, CyFalse,   CyFalse);
-    //setup_input_gpio(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyFalse);
+    setup_input_gpio(DONE,                CyFalse, CyFalse,   CyTrue);
+    setup_input_gpio(INIT_N,              CyFalse, CyFalse,   CyTrue);
+    setup_input_gpio(FMC_DETECT_N,        CyFalse, CyFalse,   CyTrue);
+    setup_input_gpio(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyTrue);
 
     //Configure Output Pins
     //                Name                Default   Override
     setup_output_gpio(FPGA_SOFT_RESET,    CyFalse,  CyFalse);
     setup_output_gpio(UART_EN,            CyFalse,  CyFalse);
     //setup_output_gpio(OTG_5V_EN,          CyFalse,  CyTrue);
-    //setup_output_gpio(POWER_SELECT_0,     CyFalse,  CyTrue);
-    //setup_output_gpio(POWER_SELECT_1,     CyFalse,  CyTrue);
-    //setup_output_gpio(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
+    setup_output_gpio(POWER_SELECT_0,     CyFalse,  CyTrue);
+    setup_output_gpio(POWER_SELECT_1,     CyTrue,  CyTrue);
+    setup_output_gpio(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
 }

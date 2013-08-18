@@ -38,7 +38,7 @@ void main_thread_entry (uint32_t input) {
   uint32_t  event_flag;
 
   /* Initialize the debug module */
-  debug_init();
+  //debug_init();
 
   /* Initialize GPIO module. */
   gpio_init ();
