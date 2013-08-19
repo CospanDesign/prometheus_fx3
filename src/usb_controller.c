@@ -151,6 +151,7 @@ void usb_start(void){
   dmaCfg.dmaMode = CY_U3P_DMA_MODE_BYTE;
   dmaCfg.notification = 0;
   dmaCfg.cb = NULL;
+
   dmaCfg.prodHeader = 0;
   dmaCfg.prodFooter = 0;
   dmaCfg.consHeader = 0;

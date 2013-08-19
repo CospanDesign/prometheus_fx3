@@ -12,6 +12,7 @@
 
 
 #include "fpga_config.h"
+#include "gpio_controller.h"
 #include "prometheus.h"
 #include "usb_controller.h"
 #include "cypress_usb_defines.h"  //Defines USB Endpoints/DMA Stuff
@@ -30,7 +31,7 @@ uint16_t  ui_packet_size = 0;
 CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
   //Conifgure an FPGA
   uint32_t ui_idx;
-  CyU3PReturnStatus_t retval;
+  uint32_t retval = CY_U3P_SUCCESS;
   CyU3PDmaBuffer_t in_buffer;
   CyBool_t fpga_done;
   CyBool_t fpga_init;
@@ -38,6 +39,8 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
   CyU3PDebugPrint(1, "config_fpga: File Length: %d\n", ui_len);
 
   retval = CyU3PSpiSetSsnLine(CyFalse);
+  CyU3PThreadSleep(10);
+  CyU3PGpioGetValue(INIT_N, &fpga_init);
   CyU3PGpioGetValue(INIT_N, &fpga_init);
   //In the example they got the value of fpga_init twice
   if (fpga_init) {
@@ -55,12 +58,19 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
   //Check if the FPGA is now ready by testing the FPGA Init Signal
   retval |= CyU3PGpioSimpleGetValue(INIT_N, &fpga_init);
   if ( (fpga_init != CyTrue) || (retval != CY_U3P_SUCCESS)) {
+    if (retval != CY_U3P_SUCCESS){
+      CyU3PDebugPrint(4, "Failed to get the value of INIT_B: Error code: %d", retval);
+    }
+    CyU3PDebugPrint(4, "Init line is low even when the Done pin is released");
+    
     return retval;
   }
 
   //1. Read data from the manual DMA Channel
   //2. Send it to the FPGA through SPI bus
   //3. Discard the buffer in the DMA
+
+  retval = CY_U3P_SUCCESS;
   for (ui_idx = 0; (ui_idx < ui_len) && FPGA_CONFIG_APP_ACTIVE; ui_idx += ui_packet_size){
     //Wiat 2 seconds to receive all data from the Transfer from the host
     if (CyU3PDmaChannelGetBuffer (&FPGA_CONFIG_CHANNEL, &in_buffer, 2000) != CY_U3P_SUCCESS){  //Wait 2000 ms?
@@ -68,6 +78,8 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
       retval = CY_U3P_ERROR_TIMEOUT;
       break;
     }
+    CyU3PDebugPrint(1, "config_fpga: Read Data");
+    
     //Transmit the data over the SPI bus
     retval = CyU3PSpiTransmitWords(in_buffer.buffer, ui_packet_size);
     if (retval != CY_U3P_SUCCESS){
@@ -81,10 +93,14 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
       break;
     }
   }
-  //Sent all the configuration data to the FPGA
+  if (retval != CY_U3P_SUCCESS) {
+    //Sent all the configuration data to the FPGA
+    CyU3PDebugPrint(4, "config_fpga: Failed to send all data to the FPGA: Error code: %d", retval);
+    return retval;
+  }
 
   //Give other threads a chance to do something
-  CyU3PThreadSleep(1);
+  CyU3PThreadSleep(10);
 
   //Check if FPGA Done signal is asserted
   retval |= CyU3PGpioSimpleGetValue(DONE, &fpga_done);
@@ -92,6 +108,7 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
     CyU3PDebugPrint(4, "config_fpga: Done pin wasn't asserted, program failed");
     CONFIG_DONE  = CyFalse;
     retval = CY_U3P_ERROR_FAILURE;
+    return retval;
   }
   CyU3PDebugPrint(2, "config_fpga: Done pin asserted, FPGA Programmed");
   return retval;
@@ -105,6 +122,7 @@ void fpga_config_setup (void){
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
   CyU3PUSBSpeed_t usb_speed = CyU3PUsbGetSpeed();
 
+  CyU3PDebugPrint (2, "fpga_config_setup: Set up FX3 to program FPGA");
   //Get the USB Speed
   switch (usb_speed){
     case CY_U3P_FULL_SPEED:
@@ -171,13 +189,13 @@ void fpga_config_setup (void){
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "fpga_config_setup: Failed to setup DMA Channel transfer size, Error code: %d", retval);
   }
+  CyU3PDebugPrint (2, "fpga_config_setup: Initialized FPGA config mode");
   FPGA_CONFIG_APP_ACTIVE = CyTrue;
 }
 
 void fpga_config_stop(void){
-  //CyU3PGPioDeInit(); //The GPIOs are always setup correctly, so there is no need to reset them here
+  CyU3PGpioDeInit();
   CyU3PSpiDeInit();
-
   //Update the flag
   FPGA_CONFIG_APP_ACTIVE = CyFalse;
   //Flush the Endpoint
@@ -187,7 +205,7 @@ void fpga_config_stop(void){
 }
 
 //Should I use the init that I have already setup??
-void fpga_config_init(void) {
+CyU3PReturnStatus_t fpga_config_init(void) {
   CyU3PIoMatrixConfig_t io_cfg;
   CyU3PSpiConfig_t  spi_config;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
@@ -197,8 +215,8 @@ void fpga_config_init(void) {
   io_cfg.useUart          = CyTrue;
   io_cfg.useI2C           = CyTrue;
   io_cfg.useI2S           = CyFalse;
-  io_cfg.useSpi           = CyFalse;
-  io_cfg.lppMode          = CY_U3P_IO_MATRIX_LPP_UART_ONLY;
+  io_cfg.useSpi           = CyTrue;
+  io_cfg.lppMode          = CY_U3P_IO_MATRIX_LPP_DEFAULT;
 
   //These are taken from prometheus.h
   io_cfg.gpioSimpleEn[0]  = LOW_GPIO_DIR;
@@ -210,13 +228,16 @@ void fpga_config_init(void) {
   //Reconfigure the IO matrix
   retval = CyU3PDeviceConfigureIOMatrix (&io_cfg);
   if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "fpga_config_init: Failed to setup IOMatrix: Error Code: %d", retval);
   	while (1);		/* Cannot recover from this error. */
   }
+  gpio_init();
 
   //Start the SPI Module
   retval = CyU3PSpiInit();
   if (retval != CY_U3P_SUCCESS) {
     CyU3PDebugPrint(4, "fpga_config_init: SPI Init Failed: Error Code: %d", retval);
+    return retval;
   }
 
   //Setup the SPI Master Block
@@ -232,8 +253,9 @@ void fpga_config_init(void) {
 
   retval = CyU3PSpiSetConfig(&spi_config, NULL);
   if (retval != CY_U3P_SUCCESS) {
-    CyU3PDebugPrint(4, "fpga_config init: SPI config failed: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "fpga_config_init: SPI config failed: Error Code: %d", retval);
   }
 
   //Maybe I should change the GPIO so that I can use the reset as a data indicator
+  return retval;
 }

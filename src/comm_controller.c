@@ -126,7 +126,6 @@ void comm_config_start(void){
 void comm_config_stop(void){
   CyU3PEpConfig_t ep_config;
   CyU3PReturnStatus_t retval  = CY_U3P_SUCCESS;
-  COMM_APP_ACTIVE = CyFalse;
 
   //Update the flag
   COMM_APP_ACTIVE = CyFalse;

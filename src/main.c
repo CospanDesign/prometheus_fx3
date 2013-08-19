@@ -16,6 +16,9 @@
 
 extern CyBool_t COMM_APP_ACTIVE;              /* Comm Mode Enabled */
 extern CyBool_t FPGA_CONFIG_APP_ACTIVE;       /* FPGA Config Mode */
+extern CyBool_t GPIO_INITIALIZED;
+
+extern uint32_t       file_length;
 
 CyU3PThread     gpio_out_thread;              /* GPIO thread structure */
 CyU3PThread     gpio_in_thread;               /* GPIO thread structure */
@@ -58,7 +61,7 @@ void main_thread_entry (uint32_t input) {
                             CYU3P_WAIT_FOREVER);
     if (retval == CY_U3P_SUCCESS){
       if (event_flag & RESET_PROC_BOOT_EVENT) {
-        CyU3PDebugPrint (3, "Reset To Boot Mode in 1 second");
+        CyU3PDebugPrint (2, "Reset To Boot Mode in 1 second");
         CyU3PThreadSleep (1000);
         /* Disconnect from the USB host and reset the device. */
         CyU3PConnectState (CyFalse, CyTrue);
@@ -68,11 +71,29 @@ void main_thread_entry (uint32_t input) {
       }
       if (event_flag & ENTER_FPGA_CONFIG_MODE_EVENT){
         //Configure the MCU to program the FPGA
-        CyU3PDebugPrint (3, "Program the FPGA");
+        CyU3PDebugPrint (2, "main_thread_entry: Program the FPGA");
+        //if (COMM_APP_ACTIVE) {
+        //  CyU3PDebugPrint(3, "COMM mode active, deactivating it");
+        //  comm_config_stop();
+        //}
+        if (GPIO_INITIALIZED) {
+          CyU3PDebugPrint (2, "main_thread_entry: Deinitializing the GPIOs");
+          gpio_deinit();
+        }
+        if (!FPGA_CONFIG_APP_ACTIVE) {
+          CyU3PDebugPrint (2, "main_thread_entry: Setup FPGA Config Mode");
+          fpga_config_init();
+          fpga_config_setup();
+        }
+        retval = config_fpga(file_length);
+        if (retval != CY_U3P_SUCCESS){
+          CyU3PDebugPrint(4, "Failed to program FPGA");
+        }
+
       }
       if (event_flag & ENTER_FPGA_COMM_MODE_EVENT){
         //Configure the MCU to use the FIFO mode
-        CyU3PDebugPrint (3, "Switch to Parallel FIFO mode");
+        CyU3PDebugPrint (2, "Switch to Parallel FIFO mode");
       }
     }
   }
@@ -81,13 +102,13 @@ void main_thread_entry (uint32_t input) {
 /* Application define function which creates the threads. */
 void CyFxApplicationDefine (void){
     void *ptr = NULL;
-    uint32_t retvalue = CY_U3P_SUCCESS;
+    uint32_t retval = CY_U3P_SUCCESS;
 
     /* Allocate the memory for the threads */
     ptr = CyU3PMemAlloc (CY_FX_COMM_THREAD_STACK);
 
     /* Create the thread for the application */
-    retvalue = CyU3PThreadCreate (
+    retval = CyU3PThreadCreate (
         &main_thread,                 /* Bulk loop App Thread structure */
         "21:Main_Thread",             /* Thread ID and Thread name */
         main_thread_entry,            /* Bulk loop App Thread Entry function */
@@ -101,7 +122,7 @@ void CyFxApplicationDefine (void){
         );
 
     /* Check the return code */
-    if (retvalue != 0){
+    if (retval != 0){
         while(1);
     }
 
@@ -111,7 +132,7 @@ void CyFxApplicationDefine (void){
     ptr = CyU3PMemAlloc (CY_FX_GPIOAPP_THREAD_STACK);
 
     /* Create the thread for the application */
-    retvalue = CyU3PThreadCreate (
+    retval = CyU3PThreadCreate (
         &gpio_out_thread,             /* GPIO Example App Thread structure */
         "22:GPIO_simple_output",      /* Thread ID and Thread name */
         gpio_out_thread_entry,        /* GPIO Example App Thread Entry function */
@@ -125,7 +146,7 @@ void CyFxApplicationDefine (void){
         );
 
     /* Check the return code */
-    if (retvalue != 0){
+    if (retval != 0){
         while(1);
     }
 
@@ -134,7 +155,7 @@ void CyFxApplicationDefine (void){
     ptr = CyU3PMemAlloc (CY_FX_GPIOAPP_THREAD_STACK);
 
     /* Create the thread for the application */
-    retvalue = CyU3PThreadCreate (
+    retval = CyU3PThreadCreate (
         &gpio_in_thread,              /* GPIO Example App Thread structure */
         "23:GPIO_simple_input",       /* Thread ID and Thread name */
         gpio_in_thread_entry,         /* GPIO Example App Thread entry function */
@@ -147,13 +168,13 @@ void CyFxApplicationDefine (void){
         CYU3P_AUTO_START              /* Start the Thread immediately */
         );
     /* Check the return code */
-    if (retvalue != 0){
+    if (retval != 0){
         while(1);
     }
     /* Create GPIO application event group */
-    retvalue = CyU3PEventCreate(&gpio_event);
-    retvalue = CyU3PEventCreate(&main_event);
-    if (retvalue != 0){
+    retval = CyU3PEventCreate(&gpio_event);
+    retval = CyU3PEventCreate(&main_event);
+    if (retval != 0){
         while(1);
     }
 }

@@ -29,14 +29,14 @@
 #include "cyu3usbconst.h"
 #include "cyu3externcstart.h"
 
-#define CY_FX_COMM_DMA_BUF_COUNT      (8)                       /* Bulk loop channel buffer count */
-#define CY_FX_COMM_DMA_TX_SIZE        (0)                       /* DMA transfer size is set to infinite */
-#define CY_FX_COMM_DMA_RX_SIZE        (0)                       /* DMA transfer size is set to infinite */
-#define CY_FX_COMM_THREAD_STACK       (0x1000)                  /* Bulk loop application thread stack size */
-#define CY_FX_COMM_THREAD_PRIORITY    (8)                       /* Bulk loop application thread priority */
+#define CY_FX_COMM_DMA_BUF_COUNT             (8)        /* Bulk loop channel buffer count */
+#define CY_FX_COMM_DMA_TX_SIZE               (0)        /* DMA transfer size is set to infinite */
+#define CY_FX_COMM_DMA_RX_SIZE               (0)        /* DMA transfer size is set to infinite */
+#define CY_FX_COMM_THREAD_STACK              (0x1000)   /* Bulk loop application thread stack size */
+#define CY_FX_COMM_THREAD_PRIORITY           (8)        /* Bulk loop application thread priority */
 
-#define CY_FX_GPIOAPP_THREAD_STACK      (0x0400)                  /* GPIO application thread stack size */
-#define CY_FX_GPIOAPP_THREAD_PRIORITY   (8)                       /* GPIO application thread priority */
+#define CY_FX_GPIOAPP_THREAD_STACK           (0x0400)   /* GPIO application thread stack size */
+#define CY_FX_GPIOAPP_THREAD_PRIORITY        (8)        /* GPIO application thread priority */
 
 
 
@@ -71,7 +71,7 @@
 
 #define DMA_BUF_SIZE						              (16)
 
-#define BURST_LEN 16  /*For USB 3.0 */
+#define BURST_LEN 16                                                      /*For USB 3.0 */
 
 /* Extern definitions for the USB Descriptors */
 extern const uint8_t CyFxUSB20DeviceDscr[];
