@@ -539,6 +539,14 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
                                      (ep0_buffer[2] << 16) |
                                      (ep0_buffer[1] << 8)  |
                                       ep0_buffer[0]);
+
+          CyU3PDebugPrint (2, "usb_controller: buf packets: %X, %X, %X, %X",
+                          ep0_buffer[3],
+                          ep0_buffer[2],
+                          ep0_buffer[1],
+                          ep0_buffer[0]);
+
+          CyU3PDebugPrint (2, "usb_controller: File Length: %X, %d", file_length, file_length);
           CONFIG_DONE = CyTrue;
           //Set CONFIG FPGA APP Start Event to start configurin the FPGA
           CyU3PEventSet (&main_event, ENTER_FPGA_CONFIG_MODE_EVENT, CYU3P_EVENT_OR);
