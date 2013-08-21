@@ -3,7 +3,7 @@
 #define __PROMETHEUS_DEFINES__
 
 //Pin Name:GPIO
-#define PROC_BUTTON        30
+#define ADJ_REG_EN         30
 #define UART_EN            24
 #define OTG_5V_EN          32
 
@@ -22,13 +22,13 @@
 #define IN                  0
 #define OUT                 1
 
-#define PROC_BUTTON_DIR         IN
+#define ADJ_REG_EN_DIR          IN
 #define UART_EN_DIR             OUT
 //XXX: THIS OTG 5V EN PIN IS AN INPUT ONLY BECAUSE THERE ISN"T THE CORRECT CONTROL TO CONTROL THIS CORRECTLY
 #define OTG_5V_EN_DIR           IN
 
-#define POWER_SELECT_0_DIR      IN
-#define POWER_SELECT_1_DIR      IN
+#define POWER_SELECT_0_DIR      OUT
+#define POWER_SELECT_1_DIR      OUT
 
 #define FMC_POWER_GOOD_OUT_DIR  OUT
 #define FMC_POWER_GOOD_IN_DIR   IN
@@ -39,7 +39,7 @@
 #define DONE_DIR                IN
 
 //Define the GPIO Dir Bitmap
-#define LOW_GPIO_DIR  (uint32_t) (PROC_BUTTON_DIR         <<  PROC_BUTTON               | \
+#define LOW_GPIO_DIR  (uint32_t) (ADJ_REG_EN_DIR          <<  ADJ_REG_EN                | \
                                   UART_EN_DIR             <<  UART_EN                   | \
                                   POWER_SELECT_0_DIR      <<  POWER_SELECT_0            | \
                                   FMC_POWER_GOOD_OUT_DIR  <<  FMC_POWER_GOOD_OUT        | \

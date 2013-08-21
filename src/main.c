@@ -81,9 +81,10 @@ void main_thread_entry (uint32_t input) {
           gpio_deinit();
         }
         if (!FPGA_CONFIG_APP_ACTIVE) {
-          CyU3PDebugPrint (2, "main_thread_entry: Setup FPGA Config Mode");
           fpga_config_init();
           fpga_config_setup();
+          debug_init();
+          CyU3PDebugPrint (2, "main_thread_entry: Setup FPGA Config Mode");
         }
         retval = config_fpga(file_length);
         if (retval != CY_U3P_SUCCESS){

@@ -32,6 +32,8 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
   //Conifgure an FPGA
   uint32_t ui_idx;
   uint32_t retval = CY_U3P_SUCCESS;
+  uint32_t read_count = 0;
+  uint32_t write_count = 0;
   CyU3PDmaBuffer_t in_buffer;
   CyBool_t fpga_done;
   CyBool_t fpga_init;
@@ -62,7 +64,7 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
       CyU3PDebugPrint(4, "Failed to get the value of INIT_B: Error code: %d", retval);
     }
     CyU3PDebugPrint(4, "Init line is low even when the Done pin is released");
-    
+
     return retval;
   }
 
@@ -72,30 +74,37 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
 
   retval = CY_U3P_SUCCESS;
   for (ui_idx = 0; (ui_idx < ui_len) && FPGA_CONFIG_APP_ACTIVE; ui_idx += ui_packet_size){
-    //Wiat 2 seconds to receive all data from the Transfer from the host
-    if (CyU3PDmaChannelGetBuffer (&FPGA_CONFIG_CHANNEL, &in_buffer, 2000) != CY_U3P_SUCCESS){  //Wait 2000 ms?
+    //Wait 2 seconds to receive all data from the Transfer from the host
+    retval = CyU3PDmaChannelGetBuffer (&FPGA_CONFIG_CHANNEL, &in_buffer, 2000);  //Wait 2 seconds
+    if (retval != CY_U3P_SUCCESS){
       CONFIG_DONE  = CyFalse;
-      retval = CY_U3P_ERROR_TIMEOUT;
+      CyU3PDebugPrint(4, "config_fpga: CyU3PDmaChannelGetBuffer fail: Error code: %d", retval);
       break;
     }
-    CyU3PDebugPrint(1, "config_fpga: Read Data");
-    
+    read_count++;
+
     //Transmit the data over the SPI bus
     retval = CyU3PSpiTransmitWords(in_buffer.buffer, ui_packet_size);
     if (retval != CY_U3P_SUCCESS){
       CONFIG_DONE = CyFalse;
+      CyU3PDebugPrint(4, "config_fpga: CyU3PSpiTransmitWords fail: Error code: %d", retval);
       break;
     }
+    write_count++;
+
     //Get rid of the data within the DMA Channel
-    if (CyU3PDmaChannelDiscardBuffer(&FPGA_CONFIG_CHANNEL) != CY_U3P_SUCCESS){
+    retval = CyU3PDmaChannelDiscardBuffer(&FPGA_CONFIG_CHANNEL);
+    if (retval != CY_U3P_SUCCESS){
       CONFIG_DONE = CyFalse;
-      retval = CY_U3P_ERROR_TIMEOUT;
+      CyU3PDebugPrint(4, "config_fpga: CyU3PDmaChannelDiscardBuffer fail: Error code: %d", retval);
       break;
     }
   }
+
   if (retval != CY_U3P_SUCCESS) {
     //Sent all the configuration data to the FPGA
-    CyU3PDebugPrint(4, "config_fpga: Failed to send all data to the FPGA: Error code: %d", retval);
+    CyU3PDebugPrint(1, "config_data: Received %d packets (512 byte packets) from DMA", read_count);
+    CyU3PDebugPrint(1, "config_data: Wrote %d packets (512 byte packets) to SPI", write_count);
     return retval;
   }
 
@@ -158,6 +167,9 @@ void fpga_config_setup (void){
     CyFxAppErrorHandler(retval);
   }
 
+  //Flush the endpoint memory
+  CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
+
   //Create a DMA Manual Channel for Host to MCU Transfer, manual because we
   //have to transfer the data to the SPI core in a thread as apposed to
   //automatically transfering it
@@ -180,9 +192,6 @@ void fpga_config_setup (void){
     CyU3PDebugPrint(4, "fpga_config_setup: failed to create DMA Channel: Error Code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
-
-  //Flush the endpoint memory
-  CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
 
   //setup the DMA Channel transfer size
   retval = CyU3PDmaChannelSetXfer (&FPGA_CONFIG_CHANNEL, CY_FX_COMM_DMA_TX_SIZE);
@@ -248,7 +257,7 @@ CyU3PReturnStatus_t fpga_config_init(void) {
   spi_config.cpha       = CyTrue;
   spi_config.leadTime   = CY_U3P_SPI_SSN_LAG_LEAD_HALF_CLK;
   spi_config.lagTime    = CY_U3P_SPI_SSN_LAG_LEAD_HALF_CLK;
-  spi_config.clock      = 25000000;   //25MHz
+  spi_config.clock      = 40000000;   //25MHz
   spi_config.wordLen    = 8;          //8-bits per word
 
   retval = CyU3PSpiSetConfig(&spi_config, NULL);

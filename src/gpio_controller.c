@@ -199,21 +199,19 @@ void gpio_init(){
 
   //Configure Input Pins
   //               Name                 Pull Up  Pull Down  Override
-  setup_input_gpio(PROC_BUTTON,         CyFalse, CyFalse,   CyTrue);
+  setup_input_gpio(ADJ_REG_EN,          CyFalse, CyTrue,    CyTrue);
   setup_input_gpio(DONE,                CyFalse, CyFalse,   CyTrue);
   setup_input_gpio(INIT_N,              CyFalse, CyFalse,   CyTrue);
   setup_input_gpio(FMC_DETECT_N,        CyFalse, CyFalse,   CyTrue);
   setup_input_gpio(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyTrue);
-  //setup_input_gpio(POWER_SELECT_0,      CyFalse, CyFalse,   CyTrue);
-  //setup_input_gpio(POWER_SELECT_1,      CyFalse,  CyFalse,   CyTrue);
 
   //Configure Output Pins
   //                Name                Default   Override
-  setup_output_gpio(FPGA_SOFT_RESET,    CyFalse,  CyFalse);
+  setup_output_gpio(FPGA_SOFT_RESET,    CyTrue,   CyFalse);
   setup_output_gpio(UART_EN,            CyFalse,  CyFalse);
   //setup_output_gpio(OTG_5V_EN,          CyFalse,  CyTrue);
-  //setup_output_gpio(POWER_SELECT_0,     CyFalse,  CyTrue);
-  //setup_output_gpio(POWER_SELECT_1,     CyTrue,  CyTrue);
+  setup_output_gpio(POWER_SELECT_0,     CyFalse,  CyTrue);
+  setup_output_gpio(POWER_SELECT_1,     CyTrue,  CyTrue);
   setup_output_gpio(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
 
   GPIO_INITIALIZED = CyTrue;

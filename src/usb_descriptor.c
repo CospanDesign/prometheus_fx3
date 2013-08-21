@@ -117,8 +117,8 @@ const uint8_t CyFxUSBSSConfigDscr[] __attribute__ ((aligned (32))) =
     /* Configuration descriptor */
     0x09,                           /* Descriptor size */
     CY_U3P_USB_CONFIG_DESCR,        /* Configuration descriptor type */
-    0x4F,0x00,                      /* Length of this descriptor and all sub descriptors */
-    0x02,                           /* Number of interfaces */
+    0x46,0x00,                      /* Length of this descriptor and all sub descriptors */
+    0x01,                           /* Number of interfaces */
     0x01,                           /* Configuration number */
     0x00,                           /* COnfiguration string index */
     0xE0,                           /* Config characteristics - Bus powered */
@@ -129,7 +129,7 @@ const uint8_t CyFxUSBSSConfigDscr[] __attribute__ ((aligned (32))) =
     CY_U3P_USB_INTRFC_DESCR,        /* Interface Descriptor type */
     0x00,                           /* Interface number */
     0x00,                           /* Alternate setting number */
-    0x02,                           /* Number of end points */
+    0x04,                           /* Number of end points */
     0xFF,                           /* Interface class */
     0x00,                           /* Interface sub class */
     0x00,                           /* Interface protocol code */
@@ -164,17 +164,6 @@ const uint8_t CyFxUSBSSConfigDscr[] __attribute__ ((aligned (32))) =
     0x00,                           /* Max no. of packets in a burst : 0: burst 1 packet at a time */
     0x00,                           /* Max streams for bulk EP = 0 (No streams) */
     0x80,0x00,                      /* Service interval for the EP : 128 bytes */
-
-    /* Interface descriptor */
-    0x09,                           /* Descriptor size */
-    CY_U3P_USB_INTRFC_DESCR,        /* Interface Descriptor type */
-    0x00,                           /* Interface number */
-    0x00,                           /* Alternate setting number */
-    0x02,                           /* Number of end points */
-    0xFF,                           /* Interface class */
-    0x00,                           /* Interface sub class */
-    0x00,                           /* Interface protocol code */
-    0x00,                           /* Interface descriptor string index */
 
     /* Endpoint descriptor for producer EP */
     0x07,                           /* Descriptor size */
@@ -213,8 +202,8 @@ const uint8_t CyFxUSBHSConfigDscr[] __attribute__ ((aligned (32))) =
     /* Configuration descriptor */
     0x09,                           /* Descriptor size */
     CY_U3P_USB_CONFIG_DESCR,        /* Configuration descriptor type */
-    0x37,0x00,                      /* Length of this descriptor and all sub descriptors */
-    0x02,                           /* Number of interfaces */
+    0x2E,0x00,                      /* Length of this descriptor and all sub descriptors */
+    0x01,                           /* Number of interfaces */
     0x01,                           /* Configuration number */
     0x00,                           /* COnfiguration string index */
     0xE0,                           /* Config characteristics - bus powered */
@@ -225,7 +214,7 @@ const uint8_t CyFxUSBHSConfigDscr[] __attribute__ ((aligned (32))) =
     CY_U3P_USB_INTRFC_DESCR,        /* Interface Descriptor type */
     0x00,                           /* Interface number */
     0x00,                           /* Alternate setting number */
-    0x02,                           /* Number of endpoints */
+    0x04,                           /* Number of endpoints */
     0xFF,                           /* Interface class */
     0x00,                           /* Interface sub class */
     0x00,                           /* Interface protocol code */
@@ -246,17 +235,6 @@ const uint8_t CyFxUSBHSConfigDscr[] __attribute__ ((aligned (32))) =
     CY_U3P_USB_EP_INTR,             /* Interrupt endpoint type */
     0x80,0x00,                      /* Max packet size = 512 bytes */
     0x01,                           /* Servicing interval for data transfers : 1 every micro second */
-
-    /* Interface descriptor */
-    0x09,                           /* Descriptor size */
-    CY_U3P_USB_INTRFC_DESCR,        /* Interface Descriptor type */
-    0x00,                           /* Interface number */
-    0x00,                           /* Alternate setting number */
-    0x02,                           /* Number of endpoints */
-    0xFF,                           /* Interface class */
-    0x00,                           /* Interface sub class */
-    0x00,                           /* Interface protocol code */
-    0x00,                           /* Interface descriptor string index */
 
     /* Endpoint descriptor for producer EP */
     0x07,                           /* Descriptor size */
@@ -281,7 +259,7 @@ const uint8_t CyFxUSBFSConfigDscr[] __attribute__ ((aligned (32))) =
     /* Configuration descriptor */
     0x09,                           /* Descriptor size */
     CY_U3P_USB_CONFIG_DESCR,        /* Configuration descriptor type */
-    0x37,0x00,                      /* Length of this descriptor and all sub descriptors */
+    0x2E,0x00,                      /* Length of this descriptor and all sub descriptors */
     0x01,                           /* Number of interfaces */
     0x01,                           /* Configuration number */
     0x00,                           /* COnfiguration string index */
@@ -314,17 +292,6 @@ const uint8_t CyFxUSBFSConfigDscr[] __attribute__ ((aligned (32))) =
     CY_U3P_USB_EP_INTR,             /* Interrupt endpoint type */
     0x40,0x00,                      /* Max packet size = 64 bytes */
     0x01,                           /* Servicing interval for data transfers : 1 every micro second */
-
-    /* Interface descriptor */
-    0x09,                           /* Descriptor size */
-    CY_U3P_USB_INTRFC_DESCR,        /* Interface Descriptor type */
-    0x00,                           /* Interface number */
-    0x00,                           /* Alternate setting number */
-    0x02,                           /* Number of endpoints */
-    0xFF,                           /* Interface class */
-    0x00,                           /* Interface sub class */
-    0x00,                           /* Interface protocol code */
-    0x00,                           /* Interface descriptor string index */
 
     /* Endpoint descriptor for producer EP */
     0x07,                           /* Descriptor size */

@@ -39,39 +39,27 @@
 #define CY_FX_GPIOAPP_THREAD_PRIORITY        (8)        /* GPIO application thread priority */
 
 
-
-/* Endpoint and socket definitions for the bulkloop application */
-
-/* To change the producer and consumer EP enter the appropriate EP numbers for the #defines.
- * In the case of IN endpoints enter EP number along with the direction bit.
- * For eg. EP 6 IN endpoint is 0x86
- *     and EP 6 OUT endpoint is 0x06.
- * To change sockets mention the appropriate socket number in the #defines. */
-
-/* Note: For USB 2.0 the endpoints and corresponding sockets are one-to-one mapped
-         i.e. EP 1 is mapped to UIB socket 1 and EP 2 to socket 2 so on */
-
-#define CY_FX_EP_DEBUG_IN                     0x01                        /* EP 1 OUT (Relative to host)*/
-#define CY_FX_EP_DEBUG_OUT                    0x81                        /* EP 1 IN  (Relative to host)*/
+#define CY_FX_EP_DEBUG_IN                     0x01                     /* EP 1 OUT (Relative to host)*/
+#define CY_FX_EP_DEBUG_OUT                    0x81                     /* EP 1 IN  (Relative to host)*/
 
 #define CY_FX_EP_DEBUG_IN_SOCKET              CY_U3P_UIB_SOCKET_PROD_1
 #define CY_FX_EP_DEBUG_OUT_SOCKET             CY_U3P_UIB_SOCKET_CONS_1
 
-#define CY_FX_EP_PRODUCER                     0x02                        /* EP 2 OUT (Relative to host)*/
-#define CY_FX_EP_CONSUMER                     0x82                        /* EP 2 IN  (Relative to host)*/
+#define CY_FX_EP_PRODUCER                     0x02                     /* EP 2 OUT (Relative to host)*/
+#define CY_FX_EP_CONSUMER                     0x82                     /* EP 2 IN  (Relative to host)*/
 
-#define CY_FX_EP_PRODUCER_USB_SOCKET          CY_U3P_UIB_SOCKET_PROD_2    /* Socket 2 is producer */
-#define CY_FX_EP_CONSUMER_USB_SOCKET          CY_U3P_UIB_SOCKET_CONS_2    /* Socket 2 is consumer */
+#define CY_FX_EP_PRODUCER_USB_SOCKET          CY_U3P_UIB_SOCKET_PROD_2 /* Socket 2 is producer */
+#define CY_FX_EP_CONSUMER_USB_SOCKET          CY_U3P_UIB_SOCKET_CONS_2 /* Socket 2 is consumer */
 
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_U_2_P     (2)
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U     (2)
 
-#define CY_FX_EP_PRODUCER_PPORT_SOCKET        CY_U3P_PIB_SOCKET_0         /* P-port Socket 0 producer */
-#define CY_FX_EP_CONSUMER_PPORT_SOCKET        CY_U3P_PIB_SOCKET_3         /* P-port socket 3 consumer */
+#define CY_FX_EP_PRODUCER_PPORT_SOCKET        CY_U3P_PIB_SOCKET_0      /* P-port Socket 0 producer */
+#define CY_FX_EP_CONSUMER_PPORT_SOCKET        CY_U3P_PIB_SOCKET_3      /* P-port socket 3 consumer */
 
 #define DMA_BUF_SIZE						              (16)
 
-#define BURST_LEN 16                                                      /*For USB 3.0 */
+#define BURST_LEN 16                                                   /*For USB 3.0 */
 
 /* Extern definitions for the USB Descriptors */
 extern const uint8_t CyFxUSB20DeviceDscr[];
