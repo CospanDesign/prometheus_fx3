@@ -175,7 +175,7 @@ void fpga_config_setup (void){
   //automatically transfering it
   dma_config.size           = size;
   dma_config.count          = CY_FX_COMM_DMA_BUF_COUNT;
-  dma_config.prodSckId      = CY_FX_EP_PRODUCER_USB_SOCKET;
+  dma_config.prodSckId      = PROMETHEUS_PRODUCER_USB_SOCKET;
   dma_config.consSckId      = CY_U3P_CPU_SOCKET_CONS;
   dma_config.dmaMode        = CY_U3P_DMA_MODE_BYTE;
 

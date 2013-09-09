@@ -48,14 +48,17 @@
 #define CY_FX_EP_PRODUCER                     0x02                     /* EP 2 OUT (Relative to host)*/
 #define CY_FX_EP_CONSUMER                     0x82                     /* EP 2 IN  (Relative to host)*/
 
-#define CY_FX_EP_PRODUCER_USB_SOCKET          CY_U3P_UIB_SOCKET_PROD_2 /* Socket 2 is producer */
-#define CY_FX_EP_CONSUMER_USB_SOCKET          CY_U3P_UIB_SOCKET_CONS_2 /* Socket 2 is consumer */
+#define PROMETHEUS_PRODUCER_USB_SOCKET        CY_U3P_UIB_SOCKET_PROD_2 /* Socket 2 is producer */
+#define PROMETHEUS_CONSUMER_USB_SOCKET        CY_U3P_UIB_SOCKET_CONS_2 /* Socket 2 is consumer */
 
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_U_2_P     (2)
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U     (2)
 
-#define CY_FX_EP_PRODUCER_PPORT_SOCKET        CY_U3P_PIB_SOCKET_0      /* P-port Socket 0 producer */
-#define CY_FX_EP_CONSUMER_PPORT_SOCKET        CY_U3P_PIB_SOCKET_3      /* P-port socket 3 consumer */
+#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_0      /* P-port Socket 0 producer */
+#define PROMETHEUS_PRODUCER_PPORT_1           CY_U3P_PIB_SOCKET_1      /* P-port Socket 1 producer */
+
+#define PROMETHEUS_CONSUMER_PPORT_0           CY_U3P_PIB_SOCKET_2      /* P-port socket 2 consumer */
+#define PROMETHEUS_CONSUMER_PPORT_1           CY_U3P_PIB_SOCKET_3      /* P-port socket 3 consumer */
 
 #define DMA_BUF_SIZE						              (16)
 

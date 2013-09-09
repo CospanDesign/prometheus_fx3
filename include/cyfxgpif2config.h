@@ -1,6 +1,6 @@
 /*
  * Project Name: Editable_FIFO.cyfx
- * Time : 08/31/2013 20:21:01
+ * Time : 09/09/2013 14:36:37
  * Device Type: FX3
  * Project Type: GPIF2
  *
