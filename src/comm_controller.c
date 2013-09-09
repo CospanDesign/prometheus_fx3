@@ -203,7 +203,7 @@ void comm_config_init(void){
   CyU3PGpifSocketConfigure(3, CY_U3P_PIB_SOCKET_3, 6, CyFalse, 1);
 
   //Start the state machine
-  retval = CyU3PGpifSMStart (START, ALPHA_START);
+  retval = CyU3PGpifSMStart (RESET, IDLE);
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "comm_config_init: Failed to start GPIF state machine: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
