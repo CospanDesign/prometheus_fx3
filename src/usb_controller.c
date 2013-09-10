@@ -184,6 +184,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         CyU3PEventSet(&main_event, RESET_PROC_BOOT_EVENT, CYU3P_EVENT_OR);
         CyU3PUsbAckSetup();
         isHandled = CyTrue;
+        break;
 
       case (ENTER_FPGA_CONFIG_MODE):
         if ((bReqType & 0x80) != 0) {
@@ -208,6 +209,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         //Set CONFIG FPGA APP Start Event to start configurin the FPGA
         CyU3PEventSet (&main_event, ENTER_FPGA_CONFIG_MODE_EVENT, CYU3P_EVENT_OR);
         isHandled = CyTrue;
+        break;
 
       case (ENTER_FPGA_COMM_MODE):
         if ((bReqType & 0x80) != 0x80){
@@ -220,7 +222,8 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
           CyU3PEventSet(&main_event, ENTER_FPGA_COMM_MODE_EVENT, CYU3P_EVENT_OR);
         }
         isHandled = CyTrue;
-    }
+        break;
+      }
   }
 
 
