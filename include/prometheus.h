@@ -56,8 +56,10 @@
 
 //USB Defines (User calls thi message
 #define RESET_TO_BOOTMODE              0xE0
-#define ENTER_FPGA_CONFIG_MODE         0xB2
+#define START_DEBUG                    0xB0
 #define ENTER_FPGA_COMM_MODE           0xB1
+#define ENTER_FPGA_CONFIG_MODE         0xB2
+#define INTERNAL_CONFIG                0xB3
 
 
 //Events that are raised when user calls the message
