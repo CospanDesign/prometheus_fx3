@@ -8,4 +8,18 @@ void gpio_out_thread_entry (uint32_t input);
 void gpio_deinit();
 void gpio_init();
 
+void gpio_release(uint32_t gpio_id);
+
+void gpio_setup_output(uint32_t pinnum,
+                       CyBool_t default_value,
+                       CyBool_t override);
+
+void gpio_setup_input(uint32_t pinnum,
+                      CyBool_t pull_up,
+                      CyBool_t pull_down,
+                      CyBool_t override);
+
+
+
+
 #endif //__GPIO_CONTROLLER_H__

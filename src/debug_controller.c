@@ -2,11 +2,12 @@
 #include "cyu3os.h"
 #include "cyu3dma.h"
 #include "cyu3error.h"
-#include "cypress_usb_defines.h"
+//#include "cypress_usb_defines.h"
 #include "cyu3usb.h"
 #include "cyu3uart.h"
 
 #include "debug_controller.h"
+#include "prometheus.h"
 
 
 void uart_debug_init (void);

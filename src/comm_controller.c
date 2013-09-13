@@ -11,7 +11,7 @@
 #include "pib_regs.h"
 
 #include "prometheus.h"
-#include "cypress_usb_defines.h"
+//#include "cypress_usb_defines.h"
 #include "cyfxgpif2config.h"
 
 
@@ -58,11 +58,6 @@ void comm_config_start(void){
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "com_config_start: Error setting up producer endpoint: Error code: %d", retval);
   }
-  //Configure Consumer
-  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
-  if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "com_config_start: Error setting up consumer endpoint: Error code: %d", retval);
-  }
 
   //Create a DMA Auto Channel that will interleave output from USB to the PPORT
   CyU3PMemSet ((uint8_t *) &dma_config, 0, sizeof(dma_config));
@@ -103,6 +98,22 @@ void comm_config_start(void){
 
   }
 
+  //Setup the endpoint
+  CyU3PMemSet ((uint8_t *) &ep_config, 0, sizeof(ep_config));
+  ep_config.enable    = CyTrue;
+  ep_config.epType    = CY_U3P_USB_EP_BULK;
+  //ep_config.burstLen  = BURST_LEN;      //XXX: This is defined within the promtheus.h, Not sure how to set this
+  ep_config.burstLen  = 1;
+    //Burst length is 1 so that only a packet size is read in
+  ep_config.streams   = 0;              //XXX: I think this is related to USB 3.0 Super Speed
+  ep_config.pcktSize  = size;
+
+
+  //Configure Consumer
+  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "com_config_start: Error setting up consumer endpoint: Error code: %d", retval);
+  }
 
 
   //Create a DMA Auto Channel that will interleave output from PPORT to the USB

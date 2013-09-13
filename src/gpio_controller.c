@@ -14,11 +14,11 @@ CyBool_t GPIO_INITIALIZED = CyFalse;
 void gpio_init(void);
 void gpio_interrupt( uint8_t gpio_id);
 
-void setup_input_gpio(uint32_t pinnum,
+void gpio_setup_input(uint32_t pinnum,
                       CyBool_t pull_up,
                       CyBool_t pull_down,
                       CyBool_t override);
-void setup_output_gpio(uint32_t pinnum,
+void gpio_setup_output(uint32_t pinnum,
                        CyBool_t default_value,
                        CyBool_t override);
 
@@ -50,7 +50,7 @@ void gpio_interrupt( uint8_t gpio_id){
 
 
 //Setup an input pin
-void setup_input_gpio(uint32_t pinnum,
+void gpio_setup_input(uint32_t pinnum,
                       CyBool_t pull_up,
                       CyBool_t pull_down,
                       CyBool_t override){
@@ -84,7 +84,7 @@ void setup_input_gpio(uint32_t pinnum,
   }
 }
 //Setup an output pin
-void setup_output_gpio(uint32_t pinnum,
+void gpio_setup_output(uint32_t pinnum,
                        CyBool_t default_value,
                        CyBool_t override){
 
@@ -199,20 +199,32 @@ void gpio_init(){
 
   //Configure Input Pins
   //               Name                 Pull Up  Pull Down  Override
-  setup_input_gpio(ADJ_REG_EN,          CyFalse, CyTrue,    CyTrue);
-  setup_input_gpio(DONE,                CyFalse, CyFalse,   CyTrue);
-  setup_input_gpio(INIT_N,              CyFalse, CyFalse,   CyTrue);
-  setup_input_gpio(FMC_DETECT_N,        CyFalse, CyFalse,   CyTrue);
-  setup_input_gpio(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(ADJ_REG_EN,          CyFalse, CyTrue,    CyTrue);
+  gpio_setup_input(DONE,                CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(INIT_N,              CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(FMC_DETECT_N,        CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyTrue);
 
   //Configure Output Pins
   //                Name                Default   Override
-  setup_output_gpio(FPGA_SOFT_RESET,    CyTrue,   CyFalse);
-  setup_output_gpio(UART_EN,            CyFalse,  CyFalse);
-  //setup_output_gpio(OTG_5V_EN,          CyFalse,  CyTrue);
-  setup_output_gpio(POWER_SELECT_0,     CyFalse,  CyTrue);
-  setup_output_gpio(POWER_SELECT_1,     CyTrue,  CyTrue);
-  setup_output_gpio(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
+  gpio_setup_output(FPGA_SOFT_RESET,    CyTrue,   CyFalse);
+  gpio_setup_output(UART_EN,            CyFalse,  CyFalse);
+  //gpio_setup_output(OTG_5V_EN,          CyFalse,  CyTrue);
+  gpio_setup_output(POWER_SELECT_0,     CyFalse,  CyTrue);
+  gpio_setup_output(POWER_SELECT_1,     CyTrue,  CyTrue);
+  gpio_setup_output(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
 
   GPIO_INITIALIZED = CyTrue;
 }
+
+void gpio_release(uint32_t gpio_id){
+  CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
+  if (CyU3PIsGpioSimpleIOConfigured(gpio_id) ||
+      CyU3PIsGpioComplexIOConfigured(gpio_id)){
+    retval = CyU3PGpioDisable(gpio_id);
+    if (retval != CY_U3P_SUCCESS){
+      CyU3PDebugPrint(4, "gpio_release: Failed to release the GPIO: Error Code: %d", retval);
+    }
+  }
+}
+

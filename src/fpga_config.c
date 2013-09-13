@@ -15,7 +15,7 @@
 #include "gpio_controller.h"
 #include "prometheus.h"
 #include "usb_controller.h"
-#include "cypress_usb_defines.h"  //Defines USB Endpoints/DMA Stuff
+//#include "cypress_usb_defines.h"  //Defines USB Endpoints/DMA Stuff
 
 
 //Globals

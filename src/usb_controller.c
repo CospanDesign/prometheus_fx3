@@ -2,7 +2,7 @@
 #include "cyu3os.h"
 #include "cyu3dma.h"
 #include "cyu3error.h"
-#include "cypress_usb_defines.h"
+//#include "cypress_usb_defines.h"
 #include "cyu3usb.h"
 #include "cyu3uart.h"
 
@@ -118,8 +118,8 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
   //Standard Request
   if (bType == CY_U3P_USB_STANDARD_RQT){
 
-    if ((bTarget == CY_U3P_USB_TARGET_INTF) && 
-        ((bRequest == CY_U3P_USB_SC_SET_FEATURE) || (bRequest == CY_U3P_USB_SC_CLEAR_FEATURE)) && 
+    if ((bTarget == CY_U3P_USB_TARGET_INTF) &&
+        ((bRequest == CY_U3P_USB_SC_SET_FEATURE) || (bRequest == CY_U3P_USB_SC_CLEAR_FEATURE)) &&
         (wValue == 0)){
 
       if (BASE_APP_ACTIVE){
@@ -202,9 +202,6 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
 
         //Internal Controls
         if (USER_WRITING(bReqType)) {
-          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-          CyU3PDebugPrint (2, "usb_controller: User Writing Data %d bytes of data", wLength);
-
           retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
           if (retval != CY_U3P_SUCCESS){
             CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
@@ -265,12 +262,16 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
 
         retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
         if (retval != CY_U3P_SUCCESS){
-          CyU3PDebugPrint (4, "get value failed, error code = %d\n", retval);
+          CyU3PDebugPrint (4, "usb_controller: set FPGA Soft Reset value failed, error code = %d\n", retval);
           CyFxAppErrorHandler(retval);
         }
 
         CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-        CyU3PDebugPrint (2, "get value failed, error code = %d\n", retval);
+        if (retval != CY_U3P_SUCCESS){
+            CyU3PDebugPrint (4, "usb_controller: get value failed, error code = %d\n", retval);
+        }
+
+        CyU3PDebugPrint (2, "Debugger Started");
 
         isHandled = CyTrue;
         break;
@@ -309,7 +310,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
             CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
             CyFxAppErrorHandler(retval);
           }
-          
+
           CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
           CyU3PEventSet(&main_event, ENTER_FPGA_COMM_MODE_EVENT, CYU3P_EVENT_OR);
           isHandled = CyTrue;
@@ -332,7 +333,31 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
           break;
         }
         break;
-      default: 
+      case USB_SET_REG_EN_TO_OUT:
+        CyU3PDebugPrint (2, "usb_controller: USB_SET_REG_EN_TO_OUT");
+        if (USER_WRITING(bReqType)){
+          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+          isHandled = CyTrue;
+          CyU3PEventSet(&main_event, EVT_SET_REG_EN_TO_OUTPUT, CYU3P_EVENT_OR);
+        }
+        break;
+      case USB_DISABLE_REGULATOR:
+        CyU3PDebugPrint (2, "usb_controller: USB_DISABLE_REGULATOR");
+        if (USER_WRITING(bReqType)){
+          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+          isHandled = CyTrue;
+          CyU3PEventSet (&main_event, EVT_DISABLE_REGULATOR, CYU3P_EVENT_OR);
+        }
+        break;
+      case USB_ENABLE_REGULATOR:
+        CyU3PDebugPrint (2, "usb_controller: USB_ENABLE_REGULATOR");
+        if (USER_WRITING(bReqType)){
+          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+          isHandled = CyTrue;
+          CyU3PEventSet (&main_event, EVT_ENABLE_REGULATOR, CYU3P_EVENT_OR);
+        }
+        break;
+      default:
         CyU3PDebugPrint (2, "usb_controller: Unrecognized command: %X", bRequest);
         break;
     }
