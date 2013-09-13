@@ -11,19 +11,19 @@
 #define ADJ_REG_EN              30
 #define UART_EN                 24
 #define OTG_5V_EN               32
-                                
+
 #define POWER_SELECT_0          27
 #define POWER_SELECT_1          45
-                                
+
 #define FMC_POWER_GOOD_OUT      25
 #define FMC_POWER_GOOD_IN       26
 #define FMC_DETECT_N            57
-                                
+
 #define FPGA_SOFT_RESET         51
 #define INIT_N                  52
 #define DONE                    50
-                                
-//Pin Direction                 
+
+//Pin Direction
 #define IN                      0
 #define OUT                     1
 
@@ -65,7 +65,7 @@
 #define ENTER_FPGA_COMM_MODE                 0xB1
 #define ENTER_FPGA_CONFIG_MODE               0xB2
 #define INTERNAL_CONFIG                      0xB3
-                                             
+
 #define USB_SET_REG_EN_TO_OUT                0xB4
 #define USB_DISABLE_REGULATOR                0xB5
 #define USB_ENABLE_REGULATOR                 0xB6

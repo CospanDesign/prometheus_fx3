@@ -127,7 +127,7 @@ void comm_config_start(void){
   dma_config.count          = CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U;  //Increace buffer count for higher performacne
   dma_config.validSckCount  = 2;                    //????
   dma_config.prodSckId[0]   = PROMETHEUS_PRODUCER_PPORT_0;
-  dma_config.consSckId[1]   = PROMETHEUS_PRODUCER_PPORT_1;
+  dma_config.prodSckId[1]   = PROMETHEUS_PRODUCER_PPORT_1;
   dma_config.consSckId[0]   = PROMETHEUS_CONSUMER_USB_SOCKET;
   dma_config.dmaMode        = CY_U3P_DMA_MODE_BYTE;
 
