@@ -43,6 +43,7 @@ void comm_config_start(void){
       break;
   }
 
+
   //Setup the endpoint
   CyU3PMemSet ((uint8_t *) &ep_config, 0, sizeof(ep_config));
   ep_config.enable    = CyTrue;
@@ -57,7 +58,22 @@ void comm_config_start(void){
   retval = CyU3PSetEpConfig(CY_FX_EP_PRODUCER, &ep_config);
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "com_config_start: Error setting up producer endpoint: Error code: %d", retval);
+    CyFxAppErrorHandler (retval);
   }
+
+  //Configure Consumer
+  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "com_config_start: Error setting up consumer endpoint: Error code: %d", retval);
+    CyFxAppErrorHandler (retval);
+  }
+
+
+
+
+
+  //Configure DMA Channels
+
 
   //Create a DMA Auto Channel that will interleave output from USB to the PPORT
   CyU3PMemSet ((uint8_t *) &dma_config, 0, sizeof(dma_config));
@@ -98,34 +114,22 @@ void comm_config_start(void){
 
   }
 
-  //Setup the endpoint
-  CyU3PMemSet ((uint8_t *) &ep_config, 0, sizeof(ep_config));
-  ep_config.enable    = CyTrue;
-  ep_config.epType    = CY_U3P_USB_EP_BULK;
-  //ep_config.burstLen  = BURST_LEN;      //XXX: This is defined within the promtheus.h, Not sure how to set this
-  ep_config.burstLen  = 1;
-    //Burst length is 1 so that only a packet size is read in
-  ep_config.streams   = 0;              //XXX: I think this is related to USB 3.0 Super Speed
-  ep_config.pcktSize  = size;
 
 
-  //Configure Consumer
-  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
-  if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "com_config_start: Error setting up consumer endpoint: Error code: %d", retval);
-  }
+
+
+  //Configure the Consumer
 
 
   //Create a DMA Auto Channel that will interleave output from PPORT to the USB
   CyU3PMemSet ((uint8_t *) &dma_config, 0, sizeof(dma_config));
   dma_config.size           = DMA_BUF_SIZE * size; //Increase buffer size for higher performance
-  dma_config.count          = CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U;  //Increate buffer count for higher performacne
+  dma_config.count          = CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U;  //Increace buffer count for higher performacne
   dma_config.validSckCount  = 2;                    //????
   dma_config.prodSckId[0]   = PROMETHEUS_PRODUCER_PPORT_0;
-  dma_config.consSckId[0]   = PROMETHEUS_PRODUCER_PPORT_1;
-  dma_config.consSckId[1]   = PROMETHEUS_CONSUMER_USB_SOCKET;
+  dma_config.consSckId[1]   = PROMETHEUS_PRODUCER_PPORT_1;
+  dma_config.consSckId[0]   = PROMETHEUS_CONSUMER_USB_SOCKET;
   dma_config.dmaMode        = CY_U3P_DMA_MODE_BYTE;
-
 
   //Enable a callback for the producer event
   dma_config.notification   = 0;
@@ -134,8 +138,6 @@ void comm_config_start(void){
   dma_config.prodFooter     = 0;
   dma_config.consHeader     = 0;
   dma_config.prodAvailCount = 0;
-
-
 
   //Create Consumer Endpoint
   dma_config.cb = NULL;
@@ -199,12 +201,12 @@ void comm_config_stop(void){
 }
 void comm_config_init(void){
 
-	CyU3PIoMatrixConfig_t io_cfg;
-	CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
+  CyU3PIoMatrixConfig_t io_cfg;
+  CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
 
   CyU3PPibClock_t pib_clock;
 
-	io_cfg.useUart          = CyTrue;
+  io_cfg.useUart          = CyTrue;
   io_cfg.useI2C           = CyTrue;
   io_cfg.useI2S           = CyFalse;
   io_cfg.useSpi           = CyFalse;
@@ -218,7 +220,7 @@ void comm_config_init(void){
 
   retval = CyU3PDeviceConfigureIOMatrix (&io_cfg);
   if (retval != CY_U3P_SUCCESS){
-  	while (1);		/* Cannot recover from this error. */
+    while (1);    /* Cannot recover from this error. */
   }
 
   //setup the P-Block
