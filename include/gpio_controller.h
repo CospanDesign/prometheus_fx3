@@ -4,6 +4,7 @@
 //Prototypes
 void gpio_in_thread_entry (uint32_t input);
 void gpio_out_thread_entry (uint32_t input);
+void gpio_interrupt( uint8_t gpio_id);
 
 void gpio_deinit();
 void gpio_init();

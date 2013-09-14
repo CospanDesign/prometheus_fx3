@@ -12,16 +12,6 @@
 CyBool_t GPIO_INITIALIZED = CyFalse;
 
 void gpio_init(void);
-void gpio_interrupt( uint8_t gpio_id);
-
-void gpio_setup_input(uint32_t pinnum,
-                      CyBool_t pull_up,
-                      CyBool_t pull_down,
-                      CyBool_t override);
-void gpio_setup_output(uint32_t pinnum,
-                       CyBool_t default_value,
-                       CyBool_t override);
-
 
 extern CyU3PEvent gpio_event;    /* GPIO input event group. */
 
