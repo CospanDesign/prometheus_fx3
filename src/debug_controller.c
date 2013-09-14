@@ -9,7 +9,6 @@
 #include "debug_controller.h"
 #include "prometheus.h"
 
-
 void uart_debug_init (void);
 
 void debug_init (void){
