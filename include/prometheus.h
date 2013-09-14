@@ -78,6 +78,8 @@
 #define EVT_SET_REG_EN_TO_OUTPUT             (1 << 3)
 #define EVT_DISABLE_REGULATOR                (1 << 4)
 #define EVT_ENABLE_REGULATOR                 (1 << 5)
+#define EVT_USB_CONNECT                      (1 << 6)
+#define EVT_USB_DISCONNECT                   (1 << 7)
 
 
 #define CY_FX_COMM_DMA_BUF_COUNT             (8)        /* Bulk loop channel buffer count */
@@ -105,11 +107,12 @@
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_U_2_P     (2)
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U     (2)
 
-#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_0      /* P-port Socket 0 producer */
-#define PROMETHEUS_PRODUCER_PPORT_1           CY_U3P_PIB_SOCKET_1      /* P-port Socket 1 producer */
+#define PROMETHEUS_CONSUMER_PPORT_0           CY_U3P_PIB_SOCKET_0      /* P-port socket 2 consumer */
+#define PROMETHEUS_CONSUMER_PPORT_1           CY_U3P_PIB_SOCKET_1      /* P-port socket 3 consumer */
 
-#define PROMETHEUS_CONSUMER_PPORT_0           CY_U3P_PIB_SOCKET_2      /* P-port socket 2 consumer */
-#define PROMETHEUS_CONSUMER_PPORT_1           CY_U3P_PIB_SOCKET_3      /* P-port socket 3 consumer */
+#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_2      /* P-port Socket 0 producer */
+#define PROMETHEUS_PRODUCER_PPORT_1           CY_U3P_PIB_SOCKET_3      /* P-port Socket 1 producer */
+
 
 #define DMA_BUF_SIZE						              (16)
 
