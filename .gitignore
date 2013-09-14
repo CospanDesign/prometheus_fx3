@@ -1,4 +1,7 @@
 
+#Example Bit File for prometheus
+example_bitfile
+
 #Python Files
 *.pyc
 
