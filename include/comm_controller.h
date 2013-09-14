@@ -25,4 +25,6 @@ void comm_config_stop(void);
   //  Disable endpoints
 
 
+void comm_gpio_init();
+
 #endif //__COMM_CONTROLLER_H__

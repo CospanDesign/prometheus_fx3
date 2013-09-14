@@ -9,11 +9,13 @@
 #include "cyu3gpif.h"
 #include "cyu3pib.h"
 #include "pib_regs.h"
+#include "gpio_controller.h"
 
 #include "prometheus.h"
 //#include "cypress_usb_defines.h"
 #include "cyfxgpif2config.h"
 
+extern CyBool_t GPIO_INITIALIZED;
 
 CyBool_t COMM_APP_ACTIVE = CyFalse;      /* Whether the loopback application is active or not. */
 CyU3PDmaMultiChannel COMM_CHANNEL_USB_TO_GPIF;
@@ -60,14 +62,6 @@ void comm_config_start(void){
     CyU3PDebugPrint(4, "com_config_start: Error setting up producer endpoint: Error code: %d", retval);
     CyFxAppErrorHandler (retval);
   }
-
-  //Configure Consumer
-  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
-  if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "com_config_start: Error setting up consumer endpoint: Error code: %d", retval);
-    CyFxAppErrorHandler (retval);
-  }
-
 
 
 
@@ -119,6 +113,25 @@ void comm_config_start(void){
 
 
   //Configure the Consumer
+  //Setup the endpoint
+  CyU3PMemSet ((uint8_t *) &ep_config, 0, sizeof(ep_config));
+  ep_config.enable    = CyTrue;
+  ep_config.epType    = CY_U3P_USB_EP_BULK;
+  //ep_config.burstLen  = BURST_LEN;      //XXX: This is defined within the promtheus.h, Not sure how to set this
+  ep_config.burstLen  = 1;
+    //Burst length is 1 so that only a packet size is read in
+  ep_config.streams   = 0;              //XXX: I think this is related to USB 3.0 Super Speed
+  ep_config.pcktSize  = size;
+
+
+
+  //Configure Consumer
+  retval = CyU3PSetEpConfig(CY_FX_EP_CONSUMER, &ep_config);
+  if (retval != CY_U3P_SUCCESS){
+    CyU3PDebugPrint(4, "com_config_start: Error setting up consumer endpoint: Error code: %d", retval);
+    CyFxAppErrorHandler (retval);
+  }
+
 
 
   //Create a DMA Auto Channel that will interleave output from PPORT to the USB
@@ -222,6 +235,10 @@ void comm_config_init(void){
   if (retval != CY_U3P_SUCCESS){
     while (1);    /* Cannot recover from this error. */
   }
+  if (GPIO_INITIALIZED) {
+    gpio_deinit();
+  }
+  comm_gpio_init();
 
   //setup the P-Block
   pib_clock.clkDiv      = 2; //XXX: I need to figure out how to setup 100MHz clock (input from the FPGA)
@@ -246,22 +263,22 @@ void comm_config_init(void){
   //                      Thread, Associated Socket, Watermark, Set the
   //                      Partial Flag, Min Number of words to transfer before sending flag
   CyU3PGpifSocketConfigure(0,                            //Thread
-                           PROMETHEUS_PRODUCER_PPORT_0,  //Socket  (0)
+                           PROMETHEUS_CONSUMER_PPORT_0,  //Socket  (0)
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
   CyU3PGpifSocketConfigure(1,                            //Thread
-                           PROMETHEUS_PRODUCER_PPORT_1,  //Socket  (1)
+                           PROMETHEUS_CONSUMER_PPORT_1,  //Socket  (1)
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
   CyU3PGpifSocketConfigure(2,                            //Thread
-                           PROMETHEUS_CONSUMER_PPORT_0,  //Socket  (2)
+                           PROMETHEUS_PRODUCER_PPORT_0,  //Socket  (2)
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
   CyU3PGpifSocketConfigure(3,                            //Thread
-                           PROMETHEUS_CONSUMER_PPORT_1,  //Socket  (3)
+                           PROMETHEUS_PRODUCER_PPORT_1,  //Socket  (3)
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
@@ -272,4 +289,50 @@ void comm_config_init(void){
     CyU3PDebugPrint(4, "comm_config_init: Failed to start GPIF state machine: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
+
+}
+
+void comm_gpio_init(){
+  CyU3PGpioClock_t gpio_clock;
+  CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
+  GPIO_INITIALIZED = CyFalse;
+
+  gpio_clock.fastClkDiv = 2;
+  gpio_clock.slowClkDiv = 0;
+  gpio_clock.simpleDiv  = CY_U3P_GPIO_SIMPLE_DIV_BY_2;
+  gpio_clock.clkSrc     = CY_U3P_SYS_CLK;
+  gpio_clock.halfDiv    = 0;
+
+  retval = CyU3PGpioInit(&gpio_clock, gpio_interrupt);
+  if (retval != 0) {
+    CyU3PDebugPrint(4, "comm_gpio_init: Failed to initialize the GPIO: Error Code: %d", retval);
+    CyFxAppErrorHandler(retval);
+  }
+
+  //Configure Input Pins
+  //               Name                 Pull Up  Pull Down  Override
+  gpio_setup_input(ADJ_REG_EN,          CyFalse, CyTrue,    CyTrue);
+  gpio_setup_input(DONE,                CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(INIT_N,              CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(FMC_DETECT_N,        CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyTrue);
+
+  //Configure Output Pins
+  //                Name                Default   Override
+  gpio_setup_output(FPGA_SOFT_RESET,    CyTrue,   CyFalse);
+  gpio_setup_output(UART_EN,            CyFalse,  CyFalse);
+  //gpio_setup_output(OTG_5V_EN,          CyFalse,  CyTrue);
+  gpio_setup_output(POWER_SELECT_0,     CyFalse,  CyTrue);
+  gpio_setup_output(POWER_SELECT_1,     CyTrue,  CyTrue);
+  gpio_setup_output(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
+
+  gpio_release(ADJ_REG_EN);
+  gpio_setup_output(ADJ_REG_EN,         CyFalse,  CyFalse);
+  retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
+  CyU3PThreadSleep (200);
+  //Re-enable the Regulator
+  retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
+
+
+  GPIO_INITIALIZED = CyTrue;
 }
