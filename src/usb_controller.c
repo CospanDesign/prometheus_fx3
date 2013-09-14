@@ -40,8 +40,14 @@ void usb_event_cb (
     uint16_t            evdata  /* Event data */
     ){
   switch (evtype){
+    case CY_U3P_USB_EVENT_CONNECT:
+      CyU3PEventSet(&main_event, EVT_USB_CONNECT, CYU3P_EVENT_OR);
+      CyU3PDebugPrint (2, "USB Connect");
+      break;
     case CY_U3P_USB_EVENT_RESET:
     case CY_U3P_USB_EVENT_DISCONNECT:
+      CyU3PEventSet(&main_event, EVT_USB_DISCONNECT, CYU3P_EVENT_OR);
+      CyU3PDebugPrint (2, "USB Disconnect");
       if (FPGA_CONFIG_APP_ACTIVE) {
         fpga_config_stop();
       }
