@@ -58,7 +58,10 @@ void main_thread_entry (uint32_t input) {
                                ENTER_FPGA_COMM_MODE_EVENT |
                                EVT_SET_REG_EN_TO_OUTPUT |
                                EVT_DISABLE_REGULATOR |
-                               EVT_ENABLE_REGULATOR),
+                               EVT_ENABLE_REGULATOR |
+                               EVT_USB_CONNECT |
+                               EVT_USB_DISCONNECT),
+
     	                      CYU3P_EVENT_OR_CLEAR,
                             &event_flag,
                             CYU3P_WAIT_FOREVER);
@@ -73,6 +76,8 @@ void main_thread_entry (uint32_t input) {
         CyU3PThreadSleep (1000);
         CyU3PDeviceReset (CyFalse);
         for (;;);
+      }
+      if (event_flag & EVT_USB_CONNECT){
       }
       //CyU3PDebugPrint (2, "main_thread: Received an event: 0x%08X", event_flag);
       if (event_flag & ENTER_FPGA_CONFIG_MODE_EVENT){
@@ -108,15 +113,10 @@ void main_thread_entry (uint32_t input) {
         comm_config_start();
 
         //Setup the GPIO to be an output
-        if (!GPIO_INITIALIZED) {
-          gpio_init();
-          gpio_release(ADJ_REG_EN);
-          gpio_setup_output(ADJ_REG_EN,         CyFalse,  CyFalse);
-          retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
-          CyU3PThreadSleep (200);
-          //Re-enable the Regulator
-          retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
-        }
+        retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
+        CyU3PThreadSleep (200);
+        //Re-enable the Regulator
+        retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
 
       }
       if (event_flag & EVT_SET_REG_EN_TO_OUTPUT){
