@@ -212,6 +212,7 @@ void comm_config_stop(void){
     CyU3PDebugPrint(4, "comm_config_stop: Failed to disable the comm consumer endpoint: Error code: %d", retval);
   }
 }
+
 void comm_config_init(void){
 
   CyU3PIoMatrixConfig_t io_cfg;
@@ -267,22 +268,25 @@ void comm_config_init(void){
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
+/*
   CyU3PGpifSocketConfigure(1,                            //Thread
                            PROMETHEUS_CONSUMER_PPORT_1,  //Socket  (1)
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
-
+*/
   CyU3PGpifSocketConfigure(2,                            //Thread
                            PROMETHEUS_PRODUCER_PPORT_0,  //Socket  (2)
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
+/*
   CyU3PGpifSocketConfigure(3,                            //Thread
                            PROMETHEUS_PRODUCER_PPORT_1,  //Socket  (3)
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
+*/
 
   //Start the state machine
   retval = CyU3PGpifSMStart (RESET, ALPHA_RESET);

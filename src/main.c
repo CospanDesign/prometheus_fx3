@@ -51,7 +51,7 @@ void main_thread_entry (uint32_t input) {
 
   for (;;){
     //CyU3PThreadSleep (100);
-    //This Function will block and wit for events to happen
+    //This Function will block and wait for events to happen
     retval = CyU3PEventGet (&main_event,
     	                        (RESET_PROC_BOOT_EVENT |
                                ENTER_FPGA_CONFIG_MODE_EVENT |
@@ -65,7 +65,7 @@ void main_thread_entry (uint32_t input) {
     	                      CYU3P_EVENT_OR_CLEAR,
                             &event_flag,
                             CYU3P_WAIT_FOREVER);
-    
+
     //CyU3PDebugPrint (2, "main_thread: event: 0x%08X", event_flag);
     if (retval == CY_U3P_SUCCESS){
       if (event_flag & RESET_PROC_BOOT_EVENT) {

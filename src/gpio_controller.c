@@ -141,7 +141,6 @@ void gpio_out_thread_entry (uint32_t input){
     }
 }
 
-
 /* Entry function for the gpioInputThread */
 void gpio_in_thread_entry (uint32_t input){
     uint32_t event_flag;

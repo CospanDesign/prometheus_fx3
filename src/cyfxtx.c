@@ -36,9 +36,11 @@
 #define CY_U3P_MEM_HEAP_BASE         ((uint8_t *)0x40038000)
 #define CY_U3P_MEM_HEAP_SIZE         (0x8000)
 
-/* The last 32 KB of RAM is reserved for 2-stage boot operation. This value can be changed to
-   0x40080000 if 2-stage boot is not used by the application. */
-#define CY_U3P_SYS_MEM_TOP           (0x40078000)
+#ifdef CYU3P_FPGA
+#define CY_U3P_SYS_MEM_TOP           (0x40040000) /* Only 256 KB RAM available on FPGA. */
+#else /* Silicon */
+#define CY_U3P_SYS_MEM_TOP           (0x40078000) /* 512 KB RAM available on silicon. */
+#endif
 
 /*
    The buffer heap is used to obtain data buffers for DMA transfers in or out of
