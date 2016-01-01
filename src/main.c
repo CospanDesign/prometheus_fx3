@@ -222,6 +222,7 @@ void CyFxApplicationDefine (void){
     if (retval != 0){
         while(1);
     }
+
 }
 
 /*
@@ -233,6 +234,7 @@ void CyFxApplicationDefine (void){
  * Threads
  *
  */
+
 int main (void){
     CyU3PIoMatrixConfig_t io_cfg;
     CyU3PReturnStatus_t status = CY_U3P_SUCCESS;

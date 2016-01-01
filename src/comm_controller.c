@@ -272,6 +272,7 @@ void comm_config_init(void){
                            6,                            //Watermark
                            CyFalse,                      //Emit a notification
                            1);                           //Threshold of DMA Flags
+
   CyU3PGpifSocketConfigure(2,                            //Thread
                            PROMETHEUS_PRODUCER_PPORT_0,  //Socket  (2)
                            6,                            //Watermark
