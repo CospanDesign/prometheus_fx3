@@ -107,11 +107,11 @@
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_U_2_P     (2)
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U     (2)
 
-#define PROMETHEUS_CONSUMER_PPORT_0           CY_U3P_PIB_SOCKET_0      /* P-port socket 2 consumer */
-#define PROMETHEUS_CONSUMER_PPORT_1           CY_U3P_PIB_SOCKET_1      /* P-port socket 3 consumer */
+#define PROMETHEUS_CONSUMER_PPORT_0           CY_U3P_PIB_SOCKET_0      /* P-port socket 0 consumer */
+#define PROMETHEUS_CONSUMER_PPORT_1           CY_U3P_PIB_SOCKET_1      /* P-port socket 1 consumer */
 
-#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_2      /* P-port Socket 0 producer */
-#define PROMETHEUS_PRODUCER_PPORT_1           CY_U3P_PIB_SOCKET_3      /* P-port Socket 1 producer */
+#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_2      /* P-port Socket 2 producer */
+#define PROMETHEUS_PRODUCER_PPORT_1           CY_U3P_PIB_SOCKET_3      /* P-port Socket 3 producer */
 
 
 #define DMA_BUF_SIZE						              (16)
