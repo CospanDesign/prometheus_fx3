@@ -2,6 +2,7 @@
   "name":"project",
   "build_dir":"build",
   "compiler_path":"/home/cospan/Projects/FX3/arm-2011.03",
+  "compiler_path_back":"/usr/bin",
   "elf2img_path":"/home/cospan/Projects/FX3/cyfx3sdk/util/elf2img",
   "upload_tool":"/home/cospan/Projects/prometheus_comm/prometheus.py",
   "upload_flags":"-pp",

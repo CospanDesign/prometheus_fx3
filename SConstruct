@@ -43,7 +43,7 @@ env.Append(CPPDEFINES ="TX_ENABLE_EVENT_TRACE")
 #All Flags
 env.Append(CCFLAGS="-mcpu=arm926ej-s")
 env.Append(CCFLAGS="-fmessage-length=0")
-env.Append(CCFLAGS="-mthumb-interwork")
+#env.Append(CCFLAGS="-mthumb-interwork")
 env.Append(CCFLAGS="-g")
 env.Append(CCFLAGS="-gdwarf-2")
 env.Append(CCFLAGS="-DDEBUG")
