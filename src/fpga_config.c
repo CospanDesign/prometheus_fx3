@@ -268,3 +268,7 @@ CyU3PReturnStatus_t fpga_config_init(void) {
   //Maybe I should change the GPIO so that I can use the reset as a data indicator
   return retval;
 }
+
+CyBool_t is_fpga_config_enabled(void){
+  return FPGA_CONFIG_APP_ACTIVE;
+}

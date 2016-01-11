@@ -25,6 +25,8 @@ void comm_config_stop(void);
   //  Disable endpoints
 
 
+CyBool_t is_comm_enabled(void);
+
 void comm_gpio_init();
 
 #endif //__COMM_CONTROLLER_H__

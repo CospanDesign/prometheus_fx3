@@ -23,9 +23,6 @@ extern CyU3PDmaChannel COMM_CHANNEL_GPIF_TO_USB;
 
 
         CyBool_t BASE_APP_ACTIVE = CyFalse;
-extern  CyBool_t FPGA_CONFIG_APP_ACTIVE;
-extern  CyBool_t COMM_APP_ACTIVE;
-
 
 uint8_t ep0_buffer[32] __attribute__ ((aligned (32)));  /* Buffer used for sending EP0 data.    */
 uint8_t usb_configuration = 0;                          /* Active USB configuration.            */
@@ -48,10 +45,10 @@ void usb_event_cb (
     case CY_U3P_USB_EVENT_DISCONNECT:
       CyU3PEventSet(&main_event, EVT_USB_DISCONNECT, CYU3P_EVENT_OR);
       CyU3PDebugPrint (2, "USB Disconnect");
-      if (FPGA_CONFIG_APP_ACTIVE) {
+      if (is_fpga_config_enabled()) {
         fpga_config_stop();
       }
-      if (COMM_APP_ACTIVE){
+      if (is_comm_enabled()){
         comm_config_stop();
       }
       if (BASE_APP_ACTIVE){
@@ -77,11 +74,11 @@ void usb_stop (void){
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
 
   //Update the flag
-  if (FPGA_CONFIG_APP_ACTIVE){
+  if (is_fpga_config_enabled()){
     //Disable the FPGA
     fpga_config_stop();
   }
-  if (COMM_APP_ACTIVE){
+  if (is_comm_enabled()){
     //Disable the FPGA comm application
     comm_config_stop();
   }
@@ -143,7 +140,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         }
 
       }
-      if (FPGA_CONFIG_APP_ACTIVE) {
+      if (is_fpga_config_enabled()) {
         if (wIndex == CY_FX_EP_PRODUCER){
           CyU3PDmaChannelReset    (&FPGA_CONFIG_CHANNEL);
           CyU3PUsbFlushEp         (CY_FX_EP_PRODUCER);
@@ -151,7 +148,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
           CyU3PDmaChannelSetXfer  (&FPGA_CONFIG_CHANNEL, CY_FX_COMM_DMA_TX_SIZE);
         }
       }
-      if (COMM_APP_ACTIVE){
+      if (is_comm_enabled()){
         if (wIndex == CY_FX_EP_PRODUCER){
           CyU3PDmaChannelReset    (&FPGA_CONFIG_CHANNEL);
           CyU3PUsbFlushEp         (CY_FX_EP_PRODUCER);
@@ -280,7 +277,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
           break;
         }
         else{
-          if (COMM_APP_ACTIVE){
+          if (is_comm_enabled()){
             ep0_buffer[0] = 0x01;
           }
           else {
