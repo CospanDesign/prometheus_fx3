@@ -22,6 +22,7 @@
 #define FPGA_SOFT_RESET         51
 #define INIT_N                  52
 #define DONE                    50
+#define FPGA_INTERRUPT          55
 
 //Pin Direction
 #define IN                      0
@@ -29,7 +30,7 @@
 
 #define ADJ_REG_EN_DIR          IN
 #define UART_EN_DIR             OUT
-//XXX: THIS OTG 5V EN PIN IS AN INPUT ONLY BECAUSE THERE ISN"T THE CORRECT CONTROL TO CONTROL THIS CORRECTLY
+//XXX: THIS OTG 5V EN PIN IS AN INPUT ONLY BECAUSE THERE ISN'T THE CORRECT CONTROL TO CONTROL THIS CORRECTLY
 #define OTG_5V_EN_DIR           IN
 
 #define POWER_SELECT_0_DIR      OUT
@@ -42,6 +43,7 @@
 #define FPGA_SOFT_RESET_DIR     OUT
 #define INIT_N_DIR              IN
 #define DONE_DIR                IN
+#define FPGA_INTERRUPT_DIR      IN
 
 //Define the GPIO Dir Bitmap
 #define LOW_GPIO_DIR  (uint32_t) (ADJ_REG_EN_DIR          <<  ADJ_REG_EN                | \
@@ -55,7 +57,8 @@
                                   FMC_DETECT_N_DIR        <<  (FMC_DETECT_N - 32)       | \
                                   FPGA_SOFT_RESET_DIR     <<  (FPGA_SOFT_RESET - 32)    | \
                                   INIT_N_DIR              <<  (INIT_N - 32)             | \
-                                  DONE_DIR                <<  (DONE - 32))
+                                  DONE_DIR                <<  (DONE - 32)               | \
+                                  FPGA_INTERRUPT_DIR      <<  (FPGA_INTERRUPT - 32))
 
 
 
@@ -66,10 +69,16 @@
 #define ENTER_FPGA_CONFIG_MODE               0xB2
 #define INTERNAL_CONFIG                      0xB3
 
-#define USB_SET_REG_EN_TO_OUT                0xB4
-#define USB_DISABLE_REGULATOR                0xB5
-#define USB_ENABLE_REGULATOR                 0xB6
+#define GPIO_CONTROL                         0xB4
+//0xB5, 0xB6 is available too
 
+//User Exposed bit values to set/clear GPIO values
+#define GPIO_FPGA_SOFT_RESET                 (1 << 0)
+#define GPIO_FPGA_DONE                       (1 << 1)
+#define GPIO_FPGA_INTERRUPT                  (1 << 2)
+#define GPIO_FMC_DETECT                      (1 << 4)
+#define GPIO_FMC_POWER_GOOD_OUT              (1 << 5)
+#define GPIO_FMC_POWER_GOOD_IN               (1 << 6)
 
 //Events that are raised when user calls the message
 #define RESET_PROC_BOOT_EVENT                (1 << 0)

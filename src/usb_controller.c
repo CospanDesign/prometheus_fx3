@@ -167,74 +167,66 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
     switch (bRequest) {
       case (RESET_TO_BOOTMODE):
         //Reset to boot mode
+        return_to_base();
         CyU3PEventSet(&main_event, RESET_PROC_BOOT_EVENT, CYU3P_EVENT_OR);
         CyU3PUsbAckSetup();
         isHandled = CyTrue;
         break;
 
-      case (INTERNAL_CONFIG):
-        CyU3PDebugPrint(2, "usb_controller: wLength: %d, Req: %X", wLength, bReqType);
-        //Internal Controls
+      case (GPIO_CONTROL):
         if (USER_WRITING(bReqType)) {
-          retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
-          if (retval != CY_U3P_SUCCESS){
-            CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
-            CyFxAppErrorHandler(retval);
-          }
-
           CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-          if (retval != CY_U3P_SUCCESS){
-            CyU3PDebugPrint (4, "get USB value failed, error code = %d\n", retval);
-            CyFxAppErrorHandler(retval);
-          }
+          CyU3PGpioSetValue (FPGA_SOFT_RESET,     !((ep0_buffer[0] & GPIO_FPGA_SOFT_RESET) > 0));
+          CyU3PGpioSetValue (FMC_POWER_GOOD_OUT,  ((ep0_buffer[0] & GPIO_FMC_POWER_GOOD_OUT) > 0));
         }
         else {
-          retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
-          if (retval != CY_U3P_SUCCESS){
-            CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
-            CyFxAppErrorHandler(retval);
-          }
-          ep0_buffer[0] = 0x01;
-          ep0_buffer[0] = 0x02;
-          ep0_buffer[0] = 0x03;
-          ep0_buffer[0] = 0x04;
-
+          ep0_buffer[0] = 0;
+          if (!CyU3PGpioGetValue(FPGA_SOFT_RESET))    ep0_buffer[0] |= GPIO_FPGA_SOFT_RESET;
+          if (CyU3PGpioGetValue(DONE))                ep0_buffer[0] |= GPIO_FPGA_DONE;
+          if (CyU3PGpioGetValue(FPGA_INTERRUPT))      ep0_buffer[0] |= GPIO_FPGA_INTERRUPT;
+          if (!CyU3PGpioGetValue(FMC_DETECT_N))       ep0_buffer[0] |= GPIO_FMC_DETECT;
+          /*** THERE IS A PROBLEM WITH THIS PIN!***/
+          //if (CyU3PGpioGetValue(FMC_POWER_GOOD_OUT))  ep0_buffer[0] |= GPIO_FMC_POWER_GOOD_OUT;
+          if (CyU3PGpioGetValue(FMC_POWER_GOOD_IN))   ep0_buffer[0] |= GPIO_FMC_POWER_GOOD_IN;
           CyU3PUsbSendEP0Data (wLength, ep0_buffer);
-          if (retval != CY_U3P_SUCCESS){
-            CyU3PDebugPrint (4, "get USB value failed, error code = %d\n", retval);
-            CyFxAppErrorHandler(retval);
-          }
-          CyU3PDebugPrint (2, "usb_controller: User Reading Data");
         }
         isHandled = CyTrue;
         break;
+      case (INTERNAL_CONFIG):
+        //This is used to read and write values within the MCU, use this to set GPIOs and other features
 
+        CyU3PDebugPrint(2, "usb_controller: wLength: %d, Req: %X", wLength, bReqType);
+        //Internal Controls
+        if (USER_WRITING(bReqType)) {
+          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+        }
+        else {
+          ep0_buffer[0] = 0;
+          CyU3PUsbSendEP0Data (wLength, ep0_buffer);
+        }
+        isHandled = CyTrue;
+        break;
       case (START_DEBUG):
-        if ((bReqType & 0x80) != 0x00) {
-          //Not a host to device command
-          break;
+        if (USER_WRITING(bReqType)){
+          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+          if (!is_debug_enabled()) {
+            debug_init();
+            CyU3PDebugPrint (2, "Debugger Started");
+          }
+          else {
+            CyU3PDebugPrint (2, "Debugger Already Running");
+          }
         }
-        if (!is_debug_enabled()) {
-          debug_init();
+        else {
+          //Do not handle reading at this time
+          ep0_buffer[0] = 0;
+          CyU3PUsbSendEP0Data (wLength, ep0_buffer);
         }
-
-        retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
-        if (retval != CY_U3P_SUCCESS){
-          CyU3PDebugPrint (4, "usb_controller: set FPGA Soft Reset value failed, error code = %d\n", retval);
-          CyFxAppErrorHandler(retval);
-        }
-
-        CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-        if (retval != CY_U3P_SUCCESS){
-            CyU3PDebugPrint (4, "usb_controller: get value failed, error code = %d\n", retval);
-        }
-
-        CyU3PDebugPrint (2, "Debugger Started");
-
         isHandled = CyTrue;
         break;
 
       case (ENTER_FPGA_CONFIG_MODE):
+        return_to_base();
         if ((bReqType & 0x80) != 0x00) {
           //Not a host to device command
           break;
@@ -254,6 +246,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         break;
 
       case (ENTER_FPGA_COMM_MODE):
+        return_to_base();
         if (USER_WRITING(bReqType)){
           CyU3PDebugPrint (2, "usb_controller: Enable COMM Mode");
           retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
@@ -282,30 +275,6 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
           }
           isHandled = CyTrue;
           break;
-        }
-        break;
-      case USB_SET_REG_EN_TO_OUT:
-        CyU3PDebugPrint (2, "usb_controller: USB_SET_REG_EN_TO_OUT");
-        if (USER_WRITING(bReqType)){
-          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-          isHandled = CyTrue;
-          CyU3PEventSet(&main_event, EVT_SET_REG_EN_TO_OUTPUT, CYU3P_EVENT_OR);
-        }
-        break;
-      case USB_DISABLE_REGULATOR:
-        CyU3PDebugPrint (2, "usb_controller: USB_DISABLE_REGULATOR");
-        if (USER_WRITING(bReqType)){
-          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-          isHandled = CyTrue;
-          CyU3PEventSet (&main_event, EVT_DISABLE_REGULATOR, CYU3P_EVENT_OR);
-        }
-        break;
-      case USB_ENABLE_REGULATOR:
-        CyU3PDebugPrint (2, "usb_controller: USB_ENABLE_REGULATOR");
-        if (USER_WRITING(bReqType)){
-          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-          isHandled = CyTrue;
-          CyU3PEventSet (&main_event, EVT_ENABLE_REGULATOR, CYU3P_EVENT_OR);
         }
         break;
       default:
