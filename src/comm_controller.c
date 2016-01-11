@@ -18,13 +18,16 @@
 extern CyBool_t GPIO_INITIALIZED;
 
 CyBool_t COMM_APP_ACTIVE = CyFalse;      /* Whether the loopback application is active or not. */
-CyU3PDmaMultiChannel COMM_CHANNEL_USB_TO_GPIF;
-CyU3PDmaMultiChannel COMM_CHANNEL_GPIF_TO_USB;
+//CyU3PDmaMultiChannel COMM_CHANNEL_USB_TO_GPIF;
+//CyU3PDmaMultiChannel COMM_CHANNEL_GPIF_TO_USB;
+CyU3PDmaChannel COMM_CHANNEL_USB_TO_GPIF;
+CyU3PDmaChannel COMM_CHANNEL_GPIF_TO_USB;
 
 void comm_config_start(void){
   uint16_t size = 0;
   CyU3PEpConfig_t               ep_config;
-  CyU3PDmaMultiChannelConfig_t  dma_config;
+  //CyU3PDmaMultiChannelConfig_t  dma_config;
+  CyU3PDmaChannelConfig_t       dma_config;
   CyU3PReturnStatus_t           retval        = CY_U3P_SUCCESS;
   CyU3PUSBSpeed_t               usb_speed     = CyU3PUsbGetSpeed();
 
@@ -71,12 +74,15 @@ void comm_config_start(void){
 
   //Create a DMA Auto Channel that will interleave output from USB to the PPORT
   CyU3PMemSet ((uint8_t *) &dma_config, 0, sizeof(dma_config));
-  dma_config.size           = DMA_BUF_SIZE * size; //Increase bufer size for higher performance
+  //dma_config.size           = DMA_BUF_SIZE * size; //Increase bufer size for higher performance
+  dma_config.size           = size; //Increase bufer size for higher performance
   dma_config.count          = CY_FX_EP_COMM_DMA_BUF_COUNT_U_2_P;
-  dma_config.validSckCount  = 2;                    //????
-  dma_config.prodSckId[0]   = PROMETHEUS_PRODUCER_USB_SOCKET;
-  dma_config.consSckId[0]   = PROMETHEUS_CONSUMER_PPORT_0;
-  dma_config.consSckId[1]   = PROMETHEUS_CONSUMER_PPORT_1;
+  //dma_config.validSckCount  = 1;                    //????
+  //dma_config.prodSckId[0]   = PROMETHEUS_PRODUCER_USB_SOCKET;
+  dma_config.prodSckId      = PROMETHEUS_PRODUCER_USB_SOCKET;
+  //dma_config.consSckId[0]   = PROMETHEUS_CONSUMER_PPORT_0;
+  dma_config.consSckId      = PROMETHEUS_CONSUMER_PPORT_0;
+  //dma_config.consSckId[1]   = PROMETHEUS_CONSUMER_PPORT_1;
   dma_config.dmaMode        = CY_U3P_DMA_MODE_BYTE;
 
   //Enable a callback for the producer event
@@ -87,9 +93,13 @@ void comm_config_start(void){
   dma_config.consHeader     = 0;
   dma_config.prodAvailCount = 0;
 
+  retval = CyU3PDmaChannelCreate (  &COMM_CHANNEL_USB_TO_GPIF,
+                                    CY_U3P_DMA_TYPE_AUTO_SIGNAL, &dma_config);
+  /*
   retval = CyU3PDmaMultiChannelCreate(&COMM_CHANNEL_USB_TO_GPIF,
                                       CY_U3P_DMA_TYPE_AUTO_ONE_TO_MANY,
                                       &dma_config);
+  */
   if (retval != CY_U3P_SUCCESS) {
     CyU3PDebugPrint(4, "com_config_start: Error creating DMA USB to GPIF DMA Channel: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
@@ -99,9 +109,13 @@ void comm_config_start(void){
   CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
 
   //Set DMA USB to GPIF Channel Transfer Size
+  /*
   retval = CyU3PDmaMultiChannelSetXfer (&COMM_CHANNEL_USB_TO_GPIF,
                                         CY_FX_COMM_DMA_TX_SIZE,
                                         0);                       //Initial Channel to start from
+  */
+  retval = CyU3PDmaChannelSetXfer ( &COMM_CHANNEL_USB_TO_GPIF,
+                                    CY_FX_COMM_DMA_TX_SIZE);
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "com_config_start: Error setting DMA USB to GPIF DMA Channel Transfer Size: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
@@ -136,12 +150,15 @@ void comm_config_start(void){
 
   //Create a DMA Auto Channel that will interleave output from PPORT to the USB
   CyU3PMemSet ((uint8_t *) &dma_config, 0, sizeof(dma_config));
-  dma_config.size           = DMA_BUF_SIZE * size; //Increase buffer size for higher performance
+  //dma_config.size           = DMA_BUF_SIZE * size; //Increase buffer size for higher performance
+  dma_config.size           = size; //Increase buffer size for higher performance
   dma_config.count          = CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U;  //Increace buffer count for higher performacne
-  dma_config.validSckCount  = 2;                    //????
-  dma_config.prodSckId[0]   = PROMETHEUS_PRODUCER_PPORT_0;
-  dma_config.prodSckId[1]   = PROMETHEUS_PRODUCER_PPORT_1;
-  dma_config.consSckId[0]   = PROMETHEUS_CONSUMER_USB_SOCKET;
+  //dma_config.validSckCount  = 1;                    //????
+  //dma_config.prodSckId[0]   = PROMETHEUS_PRODUCER_PPORT_0;
+  dma_config.prodSckId      = PROMETHEUS_PRODUCER_PPORT_0;
+  //dma_config.prodSckId[1]   = PROMETHEUS_PRODUCER_PPORT_1;
+  //dma_config.consSckId[0]   = PROMETHEUS_CONSUMER_USB_SOCKET;
+  dma_config.consSckId      = PROMETHEUS_CONSUMER_USB_SOCKET;
   dma_config.dmaMode        = CY_U3P_DMA_MODE_BYTE;
 
   //Enable a callback for the producer event
@@ -154,10 +171,16 @@ void comm_config_start(void){
 
   //Create Consumer Endpoint
   dma_config.cb = NULL;
+
+  retval = CyU3PDmaChannelCreate(   &COMM_CHANNEL_GPIF_TO_USB,
+                                    CY_U3P_DMA_TYPE_AUTO_SIGNAL,
+                                    &dma_config);
+  /*
   retval = CyU3PDmaMultiChannelCreate(&COMM_CHANNEL_GPIF_TO_USB,
                                       CY_U3P_DMA_TYPE_AUTO_MANY_TO_ONE,
                                       &dma_config);
 
+  */
   if (retval != CY_U3P_SUCCESS) {
     CyU3PDebugPrint(4, "com_config_start: Error creating DMA GPIF to USB DMA Channel: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
@@ -166,9 +189,14 @@ void comm_config_start(void){
   CyU3PUsbFlushEp(CY_FX_EP_CONSUMER);
 
   //Set DMA GPIF to USB Channel Transfer Size
+  /*
   retval = CyU3PDmaMultiChannelSetXfer(&COMM_CHANNEL_GPIF_TO_USB,
                                        CY_FX_COMM_DMA_RX_SIZE,
                                        0);                        //Initial Channel to start from
+
+  */
+  retval = CyU3PDmaChannelSetXfer ( &COMM_CHANNEL_GPIF_TO_USB,
+                                    CY_FX_COMM_DMA_RX_SIZE);
 
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "com_config_start: Error setting DMA GPIF to USB DMA Channel Transfer Size: Error code: %d", retval);
@@ -190,8 +218,10 @@ void comm_config_stop(void){
   CyU3PUsbFlushEp(CY_FX_EP_CONSUMER);
 
   //Destroy the channel
-  CyU3PDmaMultiChannelDestroy(&COMM_CHANNEL_USB_TO_GPIF);
-  CyU3PDmaMultiChannelDestroy(&COMM_CHANNEL_GPIF_TO_USB);
+  //CyU3PDmaMultiChannelDestroy(&COMM_CHANNEL_USB_TO_GPIF);
+  CyU3PDmaChannelDestroy (&COMM_CHANNEL_USB_TO_GPIF);
+  //CyU3PDmaMultiChannelDestroy(&COMM_CHANNEL_GPIF_TO_USB);
+  CyU3PDmaChannelDestroy (&COMM_CHANNEL_GPIF_TO_USB);
 
   //Disable the endpoints
   CyU3PMemSet((uint8_t *) &ep_config, 0, sizeof(ep_config));
