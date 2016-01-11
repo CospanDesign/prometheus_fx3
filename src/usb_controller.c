@@ -29,7 +29,7 @@ uint8_t usb_configuration = 0;                          /* Active USB configurat
 uint8_t usb_interface = 0;                              /* Active USB interface.                */
 uint8_t *select_buffer = 0;                             /* Buffer to hold SEL values.           */
 
-
+void return_to_base(void);
 
 /* This is the callback function to handle the USB events. */
 void usb_event_cb (
@@ -45,17 +45,7 @@ void usb_event_cb (
     case CY_U3P_USB_EVENT_DISCONNECT:
       CyU3PEventSet(&main_event, EVT_USB_DISCONNECT, CYU3P_EVENT_OR);
       CyU3PDebugPrint (2, "USB Disconnect");
-      if (is_fpga_config_enabled()) {
-        fpga_config_stop();
-      }
-      if (is_comm_enabled()){
-        comm_config_stop();
-      }
-      if (BASE_APP_ACTIVE){
-        /* Stop the loop back function. */
-        usb_stop ();
-      }
-      /* Drop current U1/U2 enable state values. */
+      usb_stop ();
       break;
     default:
       break;
@@ -68,20 +58,21 @@ void usb_start(void){
   BASE_APP_ACTIVE = CyTrue;
 }
 
+void return_to_base(void){
+  if (is_fpga_config_enabled()){
+    fpga_config_stop();
+  }
+  if (is_comm_enabled()) {
+    comm_config_stop();
+  }
+}
+
 //Stop A USB configuration
 void usb_stop (void){
   CyU3PEpConfig_t epCfg;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
+  return_to_base();
 
-  //Update the flag
-  if (is_fpga_config_enabled()){
-    //Disable the FPGA
-    fpga_config_stop();
-  }
-  if (is_comm_enabled()){
-    //Disable the FPGA comm application
-    comm_config_stop();
-  }
   BASE_APP_ACTIVE = CyFalse;
   if (is_debug_enabled()) {
     debug_destroy();
