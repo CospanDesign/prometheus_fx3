@@ -65,23 +65,13 @@ void usb_event_cb (
   }
 }
 
-
-/*
- *  This Function starts the bulk application
- *
- *  When a SET_CONF event is received from the USB host the endpoints are
- *  configured  and the DMA pipe is setup in this function
- */
-
+//Sets up USB
 void usb_start(void){
-  debug_init();
   //Update the base app activate flag
   BASE_APP_ACTIVE = CyTrue;
 }
 
-/* This function stops the bulk loop application. This shall be called whenever
- * a RESET or DISCONNECT event is received from the USB host. The endpoints are
- * disabled and the DMA pipe is destroyed by this function. */
+//Stop A USB configuration
 void usb_stop (void){
   CyU3PEpConfig_t epCfg;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
@@ -96,12 +86,13 @@ void usb_stop (void){
     comm_config_stop();
   }
   BASE_APP_ACTIVE = CyFalse;
-  CyU3PDebugDeInit ();
+  if (is_debug_enabled()) {
+    debug_destroy();
+  }
 }
 
 
-
-/* Callback to handle the USB setup requests. */
+//USB Setup
 CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
 
   CyBool_t isHandled = CyTrue;
@@ -178,7 +169,6 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
       isHandled = CyTrue;
     }
   }
-
   //Vendor Specific Requests
   if (bType == CY_U3P_USB_VENDOR_RQT){
     /*Three commands are available to the user
@@ -186,10 +176,8 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
      * FPGA Configurtion mode: Switch to the mode in which you can program the FPGA
      * COMM mode: Switch to a high speed parallel bus mode
      */
-
     switch (bRequest) {
       case (RESET_TO_BOOTMODE):
-
         //Reset to boot mode
         CyU3PEventSet(&main_event, RESET_PROC_BOOT_EVENT, CYU3P_EVENT_OR);
         CyU3PUsbAckSetup();
@@ -197,15 +185,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         break;
 
       case (INTERNAL_CONFIG):
-        //if ((bReqType & 0x80) != 0x00) {
-        //  //Not a host to device command
-        //  isHandled = CyTrue;
-        //  break;
-        //}
-
         CyU3PDebugPrint(2, "usb_controller: wLength: %d, Req: %X", wLength, bReqType);
-        //CyU3PDebugPrint(2, "bReqType: 0x%08X", bReqType);
-
         //Internal Controls
         if (USER_WRITING(bReqType)) {
           retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
@@ -219,8 +199,6 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
             CyU3PDebugPrint (4, "get USB value failed, error code = %d\n", retval);
             CyFxAppErrorHandler(retval);
           }
-
-
         }
         else {
           retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
@@ -238,12 +216,8 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
             CyU3PDebugPrint (4, "get USB value failed, error code = %d\n", retval);
             CyFxAppErrorHandler(retval);
           }
-
-
-
           CyU3PDebugPrint (2, "usb_controller: User Reading Data");
         }
-        //CyU3PUsbAckSetup();
         isHandled = CyTrue;
         break;
 
@@ -252,19 +226,9 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
           //Not a host to device command
           break;
         }
-
-
-//
-//        retval = CyU3PGpioGetValue (FPGA_SOFT_RESET, &gpio_value);
-//        if (retval != CY_U3P_SUCCESS){
-//          CyU3PDebugPrint (4, "get value failed, error code = %d\n", retval);
-//          CyFxAppErrorHandler(retval);
-//        }
-//
-//        if (gpio_value) {
-//          gpio_value = CyFalse;
-//        }
-        debug_init();
+        if (!is_debug_enabled()) {
+          debug_init();
+        }
 
         retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
         if (retval != CY_U3P_SUCCESS){
@@ -294,13 +258,6 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
                                    (ep0_buffer[2] << 16) |
                                    (ep0_buffer[1] << 8)  |
                                     ep0_buffer[0]);
-
-        //CyU3PDebugPrint (2, "usb_controller: buf packets: %X, %X, %X, %X",
-        //    ep0_buffer[3],
-        //    ep0_buffer[2],
-        //    ep0_buffer[1],
-        //    ep0_buffer[0]);
-
         //CyU3PDebugPrint (2, "usb_controller: File Length: %X, %d", file_length, file_length);
         CONFIG_DONE = CyTrue;
         //Set CONFIG FPGA APP Start Event to start configurin the FPGA
@@ -494,7 +451,4 @@ void usb_init (void) {
       CyFxAppErrorHandler(retval);
   }
 }
-
-
-
 

@@ -9,7 +9,10 @@
 #include "debug_controller.h"
 #include "prometheus.h"
 
+CyBool_t  DEBUG_ENABLED;
+
 void uart_debug_init (void);
+CyBool_t is_debug_enabled(void);
 
 void debug_init (void){
   uint16_t size = 0;
@@ -55,48 +58,25 @@ void debug_init (void){
     CyFxAppErrorHandler(retvalue);
   }
 
+  DEBUG_ENABLED = CyTrue;
 }
 
-/* This function initializes the debug module. The debug prints
- * are routed to the UART and can be seen using a UART console
- * running at 115200 baud rate. */
 
-void uart_debug_init (void){
+CyBool_t is_debug_enabled(void){
+  return DEBUG_ENABLED;
+}
 
-    CyU3PUartConfig_t uartConfig;
-    CyU3PReturnStatus_t retvalue = CY_U3P_SUCCESS;
+void debug_destroy(void){
+  CyU3PEpConfig_t ep_config;
+  CyU3PReturnStatus_t retvalue = CY_U3P_SUCCESS;
 
-    /* Initialize the UART for printing debug messages */
-    retvalue = CyU3PUartInit();
-    if (retvalue != CY_U3P_SUCCESS){
-        /* Error handling */
-        CyFxAppErrorHandler(retvalue);
-    }
+  CyU3PDebugDeInit ();
+  CyU3PUsbFlushEp(CY_FX_EP_DEBUG_OUT);
+  CyU3PMemSet((uint8_t *)&ep_config, 0, sizeof(ep_config));
+  ep_config.enable = CyFalse;
 
-    /* Set UART configuration */
-    CyU3PMemSet ((uint8_t *)&uartConfig, 0, sizeof (uartConfig));
-    uartConfig.baudRate = CY_U3P_UART_BAUDRATE_115200;
-    uartConfig.stopBit  = CY_U3P_UART_ONE_STOP_BIT;
-    uartConfig.parity   = CY_U3P_UART_NO_PARITY;
-    uartConfig.txEnable = CyTrue;
-    uartConfig.rxEnable = CyFalse;
-    uartConfig.flowCtrl = CyFalse;
-    uartConfig.isDma    = CyTrue;
-
-    retvalue = CyU3PUartSetConfig (&uartConfig, NULL);
-    if (retvalue != CY_U3P_SUCCESS){
-        CyFxAppErrorHandler(retvalue);
-    }
-
-    /* Set the UART transfer to a really large value. */
-    retvalue = CyU3PUartTxSetBlockXfer (0xFFFFFFFF);
-    if (retvalue != CY_U3P_SUCCESS) {
-        CyFxAppErrorHandler(retvalue);
-    }
-
-    /* Initialize the debug module. */
-    retvalue = CyU3PDebugInit (CY_U3P_LPP_SOCKET_UART_CONS, 8);
-    if (retvalue != CY_U3P_SUCCESS) {
-        CyFxAppErrorHandler(retvalue);
-    }
+  retvalue = CyU3PSetEpConfig(CY_FX_EP_DEBUG_OUT, &ep_config);
+  if (retvalue != CY_U3P_SUCCESS) {
+    CyFxAppErrorHandler(retvalue);
+  }
 }
