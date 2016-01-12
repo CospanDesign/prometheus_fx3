@@ -123,7 +123,6 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
   return retval;
 }
 
-
 void fpga_config_setup (void){
   uint16_t size = 0;
   CyU3PEpConfig_t ep_config;
@@ -213,7 +212,6 @@ void fpga_config_stop(void){
   CyU3PDmaChannelDestroy(&FPGA_CONFIG_CHANNEL);
 }
 
-//Should I use the init that I have already setup??
 CyU3PReturnStatus_t fpga_config_init(void) {
   CyU3PIoMatrixConfig_t io_cfg;
   CyU3PSpiConfig_t  spi_config;

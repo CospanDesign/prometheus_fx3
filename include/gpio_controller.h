@@ -20,6 +20,7 @@ void gpio_setup_input(uint32_t pinnum,
                       CyBool_t pull_down,
                       CyBool_t override);
 
+CyBool_t is_gpio_enabled(void);
 
 
 

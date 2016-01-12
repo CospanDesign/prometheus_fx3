@@ -79,7 +79,6 @@ void usb_stop (void){
   }
 }
 
-
 //USB Setup
 CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
 
@@ -227,21 +226,20 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
 
       case (ENTER_FPGA_CONFIG_MODE):
         return_to_base();
-        if ((bReqType & 0x80) != 0x00) {
-          //Not a host to device command
-          break;
+        if (USER_WRITING(bReqType)) {
+          //fpga_config_init();
+          //What is this flag for?
+          //Extract the size from byte array
+          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+          file_length = (uint32_t)  ((ep0_buffer[3] << 24) |
+                                     (ep0_buffer[2] << 16) |
+                                     (ep0_buffer[1] << 8)  |
+                                      ep0_buffer[0]);
+          //CyU3PDebugPrint (2, "usb_controller: File Length: %X, %d", file_length, file_length);
+          CONFIG_DONE = CyTrue;
+          //Set CONFIG FPGA APP Start Event to start configurin the FPGA
+          CyU3PEventSet (&main_event, ENTER_FPGA_CONFIG_MODE_EVENT, CYU3P_EVENT_OR);
         }
-        //What is this flag for?
-        //Extract the size from byte array
-        CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-        file_length = (uint32_t)  ((ep0_buffer[3] << 24) |
-                                   (ep0_buffer[2] << 16) |
-                                   (ep0_buffer[1] << 8)  |
-                                    ep0_buffer[0]);
-        //CyU3PDebugPrint (2, "usb_controller: File Length: %X, %d", file_length, file_length);
-        CONFIG_DONE = CyTrue;
-        //Set CONFIG FPGA APP Start Event to start configurin the FPGA
-        CyU3PEventSet (&main_event, ENTER_FPGA_CONFIG_MODE_EVENT, CYU3P_EVENT_OR);
         isHandled = CyTrue;
         break;
 

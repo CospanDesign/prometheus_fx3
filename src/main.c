@@ -14,17 +14,12 @@
 #include "fpga_config.h"
 
 
-extern CyBool_t COMM_APP_ACTIVE;              /* Comm Mode Enabled */
-extern CyBool_t FPGA_CONFIG_APP_ACTIVE;       /* FPGA Config Mode */
-extern CyBool_t GPIO_INITIALIZED;
-
 extern uint32_t       file_length;
 
 CyU3PThread     gpio_out_thread;              /* GPIO thread structure */
 CyU3PThread     gpio_in_thread;               /* GPIO thread structure */
 CyU3PEvent      gpio_event;                   /* GPIO input event group. */
 CyU3PEvent      main_event;                   /* Events that change */
-
 CyU3PThread     main_thread;	                /* Main application thread structure */
 
 /* Application Error Handler */
@@ -40,10 +35,7 @@ void main_thread_entry (uint32_t input) {
 	CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
   uint32_t  event_flag;
 
-  /* Initialize GPIO module. */
   gpio_init ();
-
-  /* Initialize the bulk loop application */
   usb_init();
 
   for (;;){
@@ -53,9 +45,6 @@ void main_thread_entry (uint32_t input) {
     	                        (RESET_PROC_BOOT_EVENT |
                                ENTER_FPGA_CONFIG_MODE_EVENT |
                                ENTER_FPGA_COMM_MODE_EVENT |
-                               EVT_SET_REG_EN_TO_OUTPUT |
-                               EVT_DISABLE_REGULATOR |
-                               EVT_ENABLE_REGULATOR |
                                EVT_USB_CONNECT |
                                EVT_USB_DISCONNECT),
 
@@ -63,7 +52,6 @@ void main_thread_entry (uint32_t input) {
                             &event_flag,
                             CYU3P_WAIT_FOREVER);
 
-    //CyU3PDebugPrint (2, "main_thread: event: 0x%08X", event_flag);
     if (retval == CY_U3P_SUCCESS){
       if (event_flag & RESET_PROC_BOOT_EVENT) {
         CyU3PDebugPrint (2, "Reset To Boot Mode in 1 second");
@@ -76,66 +64,38 @@ void main_thread_entry (uint32_t input) {
       }
       if (event_flag & EVT_USB_CONNECT){
       }
-      //CyU3PDebugPrint (2, "main_thread: Received an event: 0x%08X", event_flag);
       if (event_flag & ENTER_FPGA_CONFIG_MODE_EVENT){
-        //Configure the MCU to program the FPGA
-        //if (COMM_APP_ACTIVE) {
-        //  CyU3PDebugPrint(3, "COMM mode active, deactivating it");
-        //  comm_config_stop();
-        //}
-        if (GPIO_INITIALIZED) {
-          //CyU3PDebugPrint (2, "main_thread: Deinitializing the GPIOs");
+        if (is_comm_enabled()) {
+          comm_config_stop();
+        } 
+        if (is_gpio_enabled()) {
           gpio_deinit();
         }
-        if (!FPGA_CONFIG_APP_ACTIVE) {
+        if (!is_fpga_config_enabled()) {
           fpga_config_init();
           fpga_config_setup();
           debug_init();
-          //CyU3PDebugPrint (2, "main_thread: Setup FPGA Config Mode");
         }
         retval = config_fpga(file_length);
         if (retval != CY_U3P_SUCCESS){
           CyU3PDebugPrint(4, "Failed to program FPGA");
         }
-
+        fpga_config_stop();
+        CyU3PDebugPrint(4, "Programed FPGA");
       }
+
       if (event_flag & ENTER_FPGA_COMM_MODE_EVENT){
-        //Configure the MCU to use the FIFO mode
-        //CyU3PDebugPrint (2, "Switch to Parallel FIFO mode");
-        if (FPGA_CONFIG_APP_ACTIVE) {
+        if (is_fpga_config_enabled()) {
           fpga_config_stop();
         }
 
         comm_config_init();
         comm_config_start();
 
-        //Setup the GPIO to be an output
         retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
         CyU3PThreadSleep (200);
-        //Re-enable the Regulator
         retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
 
-      }
-      if (event_flag & EVT_SET_REG_EN_TO_OUTPUT){
-        //CyU3PDebugPrint (2, "Set Voltage Regulator Pin to an output");
-        //Disable the voltage regulator enable pin
-        //Enable the pin as an output
-        gpio_release(ADJ_REG_EN);
-        //Enable the regulator
-        gpio_setup_output(ADJ_REG_EN,         CyFalse,  CyFalse);
-        //CyU3PDebugPrint (2, "Voltage Regulator Pin set to an output successful!");
-      }
-      if (event_flag & EVT_DISABLE_REGULATOR){
-        //CyU3PDebugPrint (2, "Disable Regulator");
-        //Set the GPIO to high
-        //is high right?
-        retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
-      }
-      if (event_flag & EVT_ENABLE_REGULATOR){
-        //CyU3PDebugPrint (2, "Enable Regulator");
-        //Set the GPIO to low
-        //is low right?
-        retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
       }
     }
   }
@@ -231,7 +191,6 @@ void CyFxApplicationDefine (void){
  * Threads
  *
  */
-
 int main (void){
     CyU3PIoMatrixConfig_t io_cfg;
     CyU3PReturnStatus_t status = CY_U3P_SUCCESS;

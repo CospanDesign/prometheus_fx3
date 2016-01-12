@@ -149,8 +149,12 @@ void gpio_in_thread_entry (uint32_t input){
     for (;;){
         /* Wait for a GPIO event */
         retval = CyU3PEventGet (&gpio_event,
-                (CY_FX_GPIOAPP_GPIO_HIGH_EVENT | CY_FX_GPIOAPP_GPIO_LOW_EVENT),
-                CYU3P_EVENT_OR_CLEAR, &event_flag, CYU3P_WAIT_FOREVER);
+                                    (CY_FX_GPIOAPP_GPIO_HIGH_EVENT |
+                                     CY_FX_GPIOAPP_GPIO_LOW_EVENT),
+                                CYU3P_EVENT_OR_CLEAR,
+                                &event_flag,
+                                CYU3P_WAIT_FOREVER);
+
         if (retval == CY_U3P_SUCCESS){
             if (event_flag & CY_FX_GPIOAPP_GPIO_HIGH_EVENT){
                 /* Print the status of the pin */
@@ -217,3 +221,6 @@ void gpio_release(uint32_t gpio_id){
   }
 }
 
+CyBool_t is_gpio_enabled(void){
+    return GPIO_INITIALIZED;
+}
