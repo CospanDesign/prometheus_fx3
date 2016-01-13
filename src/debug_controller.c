@@ -65,6 +65,17 @@ CyBool_t is_debug_enabled(void){
   return DEBUG_ENABLED;
 }
 
+
+void debug_flush_inputs(void){
+  CyU3PUsbFlushEp (CY_FX_EP_DEBUG_IN);
+  CyU3PUsbResetEp (CY_FX_EP_DEBUG_IN);
+}
+
+void debug_flush_outputs(void){
+  CyU3PUsbFlushEp (CY_FX_EP_DEBUG_OUT);
+  CyU3PUsbResetEp (CY_FX_EP_DEBUG_OUT);
+}
+
 void debug_destroy(void){
   CyU3PEpConfig_t ep_config;
   CyU3PReturnStatus_t retvalue = CY_U3P_SUCCESS;

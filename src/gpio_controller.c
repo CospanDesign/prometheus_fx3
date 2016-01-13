@@ -158,11 +158,11 @@ void gpio_in_thread_entry (uint32_t input){
         if (retval == CY_U3P_SUCCESS){
             if (event_flag & CY_FX_GPIOAPP_GPIO_HIGH_EVENT){
                 /* Print the status of the pin */
-                CyU3PDebugPrint (2, "GPIO Went High");
+                //CyU3PDebugPrint (2, "GPIO Went High");
             }
             else{
                 /* Print the status of the pin */
-                CyU3PDebugPrint (2, "GPIO Went Low");
+                //CyU3PDebugPrint (2, "GPIO Went Low");
             }
         }
     }

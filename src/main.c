@@ -20,9 +20,6 @@ CyU3PEvent      gpio_event;                   /* GPIO input event group. */
 CyU3PEvent      main_event;                   /* Events that change */
 CyU3PThread     main_thread;	                /* Main application thread structure */
 
-//Prototypes
-void return_to_base(void);
-
 /* Application Error Handler */
 void CyFxAppErrorHandler (CyU3PReturnStatus_t status){
   CyU3PDebugPrint (4, "Error Handler: Error code: %d\n", status);
@@ -88,8 +85,10 @@ void main_thread_entry (uint32_t input) {
         //Setup the chip to handle FPGA Config USB Transactions
         fpga_confiure_mcu();
         fpga_configure_usb();
+        /*
         if (!is_debug_enabled()) 
           debug_setup();
+        */
 
         //Perform the actual configuration
         retval = config_fpga();

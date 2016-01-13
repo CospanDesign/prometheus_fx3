@@ -14,6 +14,7 @@
 #include "prometheus.h"
 //#include "cypress_usb_defines.h"
 #include "cyfxgpif2config.h"
+#include "comm_controller.h"
 
 extern CyBool_t GPIO_INITIALIZED;
 
@@ -315,4 +316,17 @@ void comm_gpio_configure_standard(){
 
 CyBool_t is_comm_enabled(void){
   return COMM_APP_ACTIVE;
+}
+
+void comm_flush_outputs(void){
+  CyU3PDmaChannelReset    (&COMM_CHANNEL_USB_TO_GPIF);
+  CyU3PUsbFlushEp         (CY_FX_EP_PRODUCER);
+  CyU3PUsbResetEp         (CY_FX_EP_PRODUCER);
+  CyU3PDmaChannelSetXfer  (&COMM_CHANNEL_USB_TO_GPIF, CY_FX_COMM_DMA_TX_SIZE);
+}
+void comm_flush_inputs(void){
+  CyU3PDmaChannelReset    (&COMM_CHANNEL_GPIF_TO_USB);
+  CyU3PUsbFlushEp         (CY_FX_EP_CONSUMER);
+  CyU3PUsbResetEp         (CY_FX_EP_CONSUMER);
+  CyU3PDmaChannelSetXfer  (&COMM_CHANNEL_GPIF_TO_USB, CY_FX_COMM_DMA_RX_SIZE);
 }

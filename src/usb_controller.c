@@ -14,14 +14,7 @@
 
 //Found in the main file
 extern CyU3PEvent     main_event;                       /* Events that change the behavior of the system*/
-extern CyBool_t       CONFIG_DONE;                      /* FPGA Configuration Finished */
-extern CyU3PDmaChannel FPGA_CONFIG_CHANNEL;
-
-extern CyU3PDmaChannel COMM_CHANNEL_USB_TO_GPIF;
-extern CyU3PDmaChannel COMM_CHANNEL_GPIF_TO_USB;
-
-
-        CyBool_t BASE_APP_ACTIVE = CyFalse;
+       CyBool_t BASE_APP_ACTIVE = CyFalse;
 
 uint8_t ep0_buffer[32] __attribute__ ((aligned (32)));  /* Buffer used for sending EP0 data.    */
 uint8_t usb_configuration = 0;                          /* Active USB configuration.            */
@@ -82,6 +75,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
   //Standard Request
   if (bType == CY_U3P_USB_STANDARD_RQT){
 
+    //Talking to an interface
     if ((bTarget == CY_U3P_USB_TARGET_INTF) &&
         ((bRequest == CY_U3P_USB_SC_SET_FEATURE) || (bRequest == CY_U3P_USB_SC_CLEAR_FEATURE)) &&
         (wValue == 0)){
@@ -94,49 +88,39 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
       }
       isHandled = CyTrue;
     }
-    if ((bTarget == CY_U3P_USB_TARGET_ENDPT) && (bRequest == CY_U3P_USB_SC_CLEAR_FEATURE)
-        && (wValue == CY_U3P_USBX_FS_EP_HALT)){
+    //Talking to an Endpoint
+    if ((bTarget    == CY_U3P_USB_TARGET_ENDPT) &&
+        (bRequest   == CY_U3P_USB_SC_CLEAR_FEATURE) &&
+        (wValue     == CY_U3P_USBX_FS_EP_HALT)){
       if (BASE_APP_ACTIVE){
         if (wIndex == CY_FX_EP_DEBUG_IN){
           //Flush/Reset Debug Endpoints
-          CyU3PUsbFlushEp (CY_FX_EP_DEBUG_IN);
-          CyU3PUsbResetEp (CY_FX_EP_DEBUG_IN);
+          debug_flush_inputs();
         }
 
         if (wIndex == CY_FX_EP_DEBUG_OUT){
           //Flush/Reset Debug Endpoints
-          CyU3PUsbFlushEp (CY_FX_EP_DEBUG_OUT);
-          CyU3PUsbResetEp (CY_FX_EP_DEBUG_OUT);
+          debug_flush_outputs();
         }
 
       }
       if (is_fpga_config_enabled()) {
         if (wIndex == CY_FX_EP_PRODUCER){
-          CyU3PDmaChannelReset    (&FPGA_CONFIG_CHANNEL);
-          CyU3PUsbFlushEp         (CY_FX_EP_PRODUCER);
-          CyU3PUsbResetEp         (CY_FX_EP_PRODUCER);
-          CyU3PDmaChannelSetXfer  (&FPGA_CONFIG_CHANNEL, CY_FX_COMM_DMA_TX_SIZE);
+          fpga_flush_outputs();
         }
       }
       if (is_comm_enabled()){
         if (wIndex == CY_FX_EP_PRODUCER){
-          CyU3PDmaChannelReset    (&FPGA_CONFIG_CHANNEL);
-          CyU3PUsbFlushEp         (CY_FX_EP_PRODUCER);
-          CyU3PUsbResetEp         (CY_FX_EP_PRODUCER);
-          CyU3PDmaChannelSetXfer  (&FPGA_CONFIG_CHANNEL, CY_FX_COMM_DMA_TX_SIZE);
+          comm_flush_outputs();
         }
         if (wIndex == CY_FX_EP_CONSUMER){
-          CyU3PDmaChannelReset    (&COMM_CHANNEL_USB_TO_GPIF);
-          CyU3PUsbFlushEp         (CY_FX_EP_CONSUMER);
-          CyU3PUsbResetEp         (CY_FX_EP_CONSUMER);
-          CyU3PDmaChannelSetXfer  (&COMM_CHANNEL_GPIF_TO_USB, CY_FX_COMM_DMA_RX_SIZE);
+          comm_flush_inputs();
         }
       }
       CyU3PUsbStall (wIndex, CyFalse, CyTrue);
       isHandled = CyTrue;
     }
   }
-
   //Vendor Specific Requests
   if (bType == CY_U3P_USB_VENDOR_RQT){
     switch (bRequest) {
@@ -169,7 +153,6 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         break;
       case (INTERNAL_CONFIG):
         //This is used to read and write values within the MCU, use this to set GPIOs and other features
-
         CyU3PDebugPrint(2, "usb_controller: wLength: %d, Req: %X", wLength, bReqType);
         //Internal Controls
         if (USER_WRITING(bReqType)) {
@@ -209,13 +192,9 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         }
         isHandled = CyTrue;
         break;
-
       case (ENTER_FPGA_CONFIG_MODE):
-        return_to_base();
         if (USER_WRITING(bReqType)) {
           uint32_t value;
-          //fpga_confiure_mcu();
-          //What is this flag for?
           //Extract the size from byte array
           CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
           value = (uint32_t)  ((ep0_buffer[3] << 24) |
@@ -223,19 +202,21 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
                                (ep0_buffer[1] << 8)  |
                                 ep0_buffer[0]);
           fpga_config_set_file_length(value);
-          //CyU3PDebugPrint (2, "usb_controller: File Length: %X, %d", file_length, file_length);
-          CONFIG_DONE = CyTrue;
+          //CONFIG_DONE = CyTrue;
           //Set CONFIG FPGA APP Start Event to start configurin the FPGA
           CyU3PEventSet (&main_event, ENTER_FPGA_CONFIG_MODE_EVENT, CYU3P_EVENT_OR);
+          CyU3PUsbAckSetup();
         }
-        CyU3PUsbAckSetup();
+        else {
+          ep0_buffer[0] = is_fpga_config_enabled() ? 0x01: 0x00;
+          CyU3PUsbSendEP0Data (wLength, ep0_buffer);
+        }
         isHandled = CyTrue;
         break;
-
       case (ENTER_FPGA_COMM_MODE):
         if (USER_WRITING(bReqType)){
           CyU3PDebugPrint (2, "usb_controller: Enable COMM Mode");
-          retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
+          CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
           CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
           CyU3PEventSet(&main_event, ENTER_FPGA_COMM_MODE_EVENT, CYU3P_EVENT_OR);
           CyU3PUsbAckSetup();
@@ -247,6 +228,8 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         isHandled = CyTrue;
         break;
       default:
+        isHandled = CyTrue;
+        CyU3PUsbAckSetup();
         CyU3PDebugPrint (2, "usb_controller: Unrecognized command: %X", bRequest);
         break;
     }

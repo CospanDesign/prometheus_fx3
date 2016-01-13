@@ -28,5 +28,7 @@ void comm_config_stop(void);
 CyBool_t is_comm_enabled(void);
 
 void comm_gpio_configure_standard();
-
+void comm_flush_outputs(void);
+void comm_flush_inputs(void);
 #endif //__COMM_CONTROLLER_H__
+

@@ -20,7 +20,6 @@
 
 //Globals
 CyU3PDmaChannel FPGA_CONFIG_CHANNEL;
-CyBool_t CONFIG_DONE = CyTrue;
 CyBool_t FPGA_CONFIG_APP_ACTIVE = CyFalse;
 
 
@@ -50,7 +49,6 @@ CyU3PReturnStatus_t config_fpga (void){
   if (fpga_init) {
     //Something went wrong with configuration
     CyU3PDebugPrint(4, "config_fpga: Program is low and INIT_B is high!");
-    CONFIG_DONE = CyFalse;
     return retval;
   }
 
@@ -79,7 +77,6 @@ CyU3PReturnStatus_t config_fpga (void){
     //Wait 2 seconds to receive all data from the Transfer from the host
     retval = CyU3PDmaChannelGetBuffer (&FPGA_CONFIG_CHANNEL, &in_buffer, 2000);  //Wait 2 seconds
     if (retval != CY_U3P_SUCCESS){
-      CONFIG_DONE  = CyFalse;
       CyU3PDebugPrint(4, "config_fpga: CyU3PDmaChannelGetBuffer fail: Error code: %d", retval);
       break;
     }
@@ -88,7 +85,6 @@ CyU3PReturnStatus_t config_fpga (void){
     //Transmit the data over the SPI bus
     retval = CyU3PSpiTransmitWords(in_buffer.buffer, ui_packet_size);
     if (retval != CY_U3P_SUCCESS){
-      CONFIG_DONE = CyFalse;
       CyU3PDebugPrint(4, "config_fpga: CyU3PSpiTransmitWords fail: Error code: %d", retval);
       break;
     }
@@ -97,7 +93,6 @@ CyU3PReturnStatus_t config_fpga (void){
     //Get rid of the data within the DMA Channel
     retval = CyU3PDmaChannelDiscardBuffer(&FPGA_CONFIG_CHANNEL);
     if (retval != CY_U3P_SUCCESS){
-      CONFIG_DONE = CyFalse;
       CyU3PDebugPrint(4, "config_fpga: CyU3PDmaChannelDiscardBuffer fail: Error code: %d", retval);
       break;
     }
@@ -117,7 +112,6 @@ CyU3PReturnStatus_t config_fpga (void){
   retval |= CyU3PGpioSimpleGetValue(DONE, &fpga_done);
   if (fpga_done != CyTrue){
     CyU3PDebugPrint(4, "config_fpga: Done pin wasn't asserted, program failed");
-    CONFIG_DONE  = CyFalse;
     retval = CY_U3P_ERROR_FAILURE;
     return retval;
   }
@@ -209,7 +203,7 @@ void fpga_config_stop(void){
   //Update the flag
   FPGA_CONFIG_APP_ACTIVE = CyFalse;
   //Flush the Endpoint
-  CyU3PUsbFlushEp(CY_FX_EP_PRODUCER);
+  CyU3PUsbResetEp         (CY_FX_EP_PRODUCER);
   //Destroy the channel
   CyU3PDmaChannelDestroy(&FPGA_CONFIG_CHANNEL);
 }
@@ -279,4 +273,12 @@ void fpga_config_set_file_length(uint32_t in_file_length){
 
 uint32_t fpga_config_get_file_length(void){
   return file_length;
+}
+
+void fpga_flush_outputs(void){
+  CyU3PDmaChannelReset    (&FPGA_CONFIG_CHANNEL);
+  CyU3PUsbFlushEp         (CY_FX_EP_PRODUCER);
+  CyU3PUsbResetEp         (CY_FX_EP_PRODUCER);
+  CyU3PDmaChannelSetXfer  (&FPGA_CONFIG_CHANNEL, CY_FX_COMM_DMA_TX_SIZE);
+
 }
