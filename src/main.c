@@ -14,13 +14,14 @@
 #include "fpga_config.h"
 
 
-extern uint32_t       file_length;
-
 CyU3PThread     gpio_out_thread;              /* GPIO thread structure */
 CyU3PThread     gpio_in_thread;               /* GPIO thread structure */
 CyU3PEvent      gpio_event;                   /* GPIO input event group. */
 CyU3PEvent      main_event;                   /* Events that change */
 CyU3PThread     main_thread;	                /* Main application thread structure */
+
+//Prototypes
+void return_to_base(void);
 
 /* Application Error Handler */
 void CyFxAppErrorHandler (CyU3PReturnStatus_t status){
@@ -30,22 +31,31 @@ void CyFxAppErrorHandler (CyU3PReturnStatus_t status){
   }
 }
 
+void return_to_base(void){
+  if (is_fpga_config_enabled()){
+    fpga_config_stop();
+  }
+  if (is_comm_enabled()) {
+    comm_config_stop();
+  }
+}
+
 /* Entry function for the main_thread. */
 void main_thread_entry (uint32_t input) {
 	CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
   uint32_t  event_flag;
 
-  gpio_init ();
-  usb_init();
+  gpio_configure_standard ();
+  usb_setup_mcu();
 
   for (;;){
     //CyU3PThreadSleep (100);
     //This Function will block and wait for events to happen
     retval = CyU3PEventGet (&main_event,
-    	                        (RESET_PROC_BOOT_EVENT |
+    	                        (RESET_PROC_BOOT_EVENT        |
                                ENTER_FPGA_CONFIG_MODE_EVENT |
-                               ENTER_FPGA_COMM_MODE_EVENT |
-                               EVT_USB_CONNECT |
+                               ENTER_FPGA_COMM_MODE_EVENT   |
+                               EVT_USB_CONNECT              |
                                EVT_USB_DISCONNECT),
 
     	                      CYU3P_EVENT_OR_CLEAR,
@@ -54,6 +64,7 @@ void main_thread_entry (uint32_t input) {
 
     if (retval == CY_U3P_SUCCESS){
       if (event_flag & RESET_PROC_BOOT_EVENT) {
+        return_to_base();
         CyU3PDebugPrint (2, "Reset To Boot Mode in 1 second");
         CyU3PThreadSleep (1000);
         /* Disconnect from the USB host and reset the device. */
@@ -63,39 +74,47 @@ void main_thread_entry (uint32_t input) {
         for (;;);
       }
       if (event_flag & EVT_USB_CONNECT){
+        CyU3PDebugPrint (2, "USB Connected");
+        usb_start();
+        return_to_base();
       }
       if (event_flag & ENTER_FPGA_CONFIG_MODE_EVENT){
-        if (is_comm_enabled()) {
-          comm_config_stop();
-        } 
+        //Return to base mode
+        return_to_base();
         if (is_gpio_enabled()) {
           gpio_deinit();
         }
-        if (!is_fpga_config_enabled()) {
-          fpga_config_init();
-          fpga_config_setup();
-          debug_init();
-        }
-        retval = config_fpga(file_length);
-        if (retval != CY_U3P_SUCCESS){
+
+        //Setup the chip to handle FPGA Config USB Transactions
+        fpga_confiure_mcu();
+        fpga_configure_usb();
+        if (!is_debug_enabled()) 
+          debug_setup();
+
+        //Perform the actual configuration
+        retval = config_fpga();
+        if (retval != CY_U3P_SUCCESS)
           CyU3PDebugPrint(4, "Failed to program FPGA");
-        }
-        fpga_config_stop();
-        CyU3PDebugPrint(4, "Programed FPGA");
+        else
+          CyU3PDebugPrint(4, "Programed FPGA");
+
+        //Put the chip back to how we found it
+        return_to_base();
+        //Set the GPIOs up in their normal configuration
+        gpio_configure_standard();
       }
 
       if (event_flag & ENTER_FPGA_COMM_MODE_EVENT){
-        if (is_fpga_config_enabled()) {
-          fpga_config_stop();
-        }
-
-        comm_config_init();
+        //Disable any of the other modes
+        return_to_base();
+        //Initialize the COMM mode
+        comm_configure_mcu();
         comm_config_start();
-
-        retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
-        CyU3PThreadSleep (200);
-        retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
-
+      }
+      if (event_flag & EVT_USB_DISCONNECT){
+        CyU3PDebugPrint (2, "USB Disconnect");
+        return_to_base();
+        usb_stop();
       }
     }
   }

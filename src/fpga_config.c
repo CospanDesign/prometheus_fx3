@@ -28,8 +28,9 @@ CyBool_t FPGA_CONFIG_APP_ACTIVE = CyFalse;
 uint32_t  file_length = 0;
 uint16_t  ui_packet_size = 0;
 
-CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
+CyU3PReturnStatus_t config_fpga (void){
   //Conifgure an FPGA
+  uint32_t ui_len;
   uint32_t ui_idx;
   uint32_t retval = CY_U3P_SUCCESS;
   uint32_t read_count = 0;
@@ -38,6 +39,7 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
   CyBool_t fpga_done;
   CyBool_t fpga_init;
 
+  ui_len = fpga_config_get_file_length();
   CyU3PDebugPrint(1, "config_fpga: File Length: %d\n", ui_len);
 
   retval = CyU3PSpiSetSsnLine(CyFalse);
@@ -123,14 +125,14 @@ CyU3PReturnStatus_t config_fpga (uint32_t ui_len){
   return retval;
 }
 
-void fpga_config_setup (void){
+void fpga_configure_usb (void){
   uint16_t size = 0;
   CyU3PEpConfig_t ep_config;
   CyU3PDmaChannelConfig_t dma_config;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
   CyU3PUSBSpeed_t usb_speed = CyU3PUsbGetSpeed();
 
-  CyU3PDebugPrint (2, "fpga_config_setup: Set up FX3 to program FPGA");
+  CyU3PDebugPrint (2, "fpga_configure_usb: Set up FX3 to program FPGA");
   //Get the USB Speed
   switch (usb_speed){
     case CY_U3P_FULL_SPEED:
@@ -143,7 +145,7 @@ void fpga_config_setup (void){
       size = 1024;
       break;
     default:
-      CyU3PDebugPrint(4, "fpga_config_setup: Error! Invalid USB speed.");
+      CyU3PDebugPrint(4, "fpga_configure_usb: Error! Invalid USB speed.");
       CyFxAppErrorHandler(CY_U3P_ERROR_FAILURE);
       break;
   }
@@ -162,7 +164,7 @@ void fpga_config_setup (void){
   //Producer Endpoint (incomming relative to the MCU)
   retval = CyU3PSetEpConfig(CY_FX_EP_PRODUCER, &ep_config);
   if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "fpga_config_setup: Failed to setup endpoint for FPGA Config: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "fpga_configure_usb: Failed to setup endpoint for FPGA Config: Error Code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
 
@@ -188,16 +190,16 @@ void fpga_config_setup (void){
 
   retval = CyU3PDmaChannelCreate(&FPGA_CONFIG_CHANNEL, CY_U3P_DMA_TYPE_MANUAL_IN, &dma_config);
   if (retval != CY_U3P_SUCCESS) {
-    CyU3PDebugPrint(4, "fpga_config_setup: failed to create DMA Channel: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "fpga_configure_usb: failed to create DMA Channel: Error Code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
 
   //setup the DMA Channel transfer size
   retval = CyU3PDmaChannelSetXfer (&FPGA_CONFIG_CHANNEL, CY_FX_COMM_DMA_TX_SIZE);
   if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "fpga_config_setup: Failed to setup DMA Channel transfer size, Error code: %d", retval);
+    CyU3PDebugPrint(4, "fpga_configure_usb: Failed to setup DMA Channel transfer size, Error code: %d", retval);
   }
-  CyU3PDebugPrint (2, "fpga_config_setup: Initialized FPGA config mode");
+  CyU3PDebugPrint (2, "fpga_configure_usb: Initialized FPGA config mode");
   FPGA_CONFIG_APP_ACTIVE = CyTrue;
 }
 
@@ -212,7 +214,7 @@ void fpga_config_stop(void){
   CyU3PDmaChannelDestroy(&FPGA_CONFIG_CHANNEL);
 }
 
-CyU3PReturnStatus_t fpga_config_init(void) {
+CyU3PReturnStatus_t fpga_confiure_mcu(void) {
   CyU3PIoMatrixConfig_t io_cfg;
   CyU3PSpiConfig_t  spi_config;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
@@ -235,15 +237,15 @@ CyU3PReturnStatus_t fpga_config_init(void) {
   //Reconfigure the IO matrix
   retval = CyU3PDeviceConfigureIOMatrix (&io_cfg);
   if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "fpga_config_init: Failed to setup IOMatrix: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "fpga_confiure_mcu: Failed to setup IOMatrix: Error Code: %d", retval);
   	while (1);		/* Cannot recover from this error. */
   }
-  gpio_init();
+  gpio_configure_standard();
 
   //Start the SPI Module
   retval = CyU3PSpiInit();
   if (retval != CY_U3P_SUCCESS) {
-    CyU3PDebugPrint(4, "fpga_config_init: SPI Init Failed: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "fpga_confiure_mcu: SPI Init Failed: Error Code: %d", retval);
     return retval;
   }
 
@@ -260,7 +262,7 @@ CyU3PReturnStatus_t fpga_config_init(void) {
 
   retval = CyU3PSpiSetConfig(&spi_config, NULL);
   if (retval != CY_U3P_SUCCESS) {
-    CyU3PDebugPrint(4, "fpga_config_init: SPI config failed: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "fpga_confiure_mcu: SPI config failed: Error Code: %d", retval);
   }
 
   //Maybe I should change the GPIO so that I can use the reset as a data indicator
@@ -269,4 +271,12 @@ CyU3PReturnStatus_t fpga_config_init(void) {
 
 CyBool_t is_fpga_config_enabled(void){
   return FPGA_CONFIG_APP_ACTIVE;
+}
+
+void fpga_config_set_file_length(uint32_t in_file_length){
+  file_length = in_file_length;
+}
+
+uint32_t fpga_config_get_file_length(void){
+  return file_length;
 }

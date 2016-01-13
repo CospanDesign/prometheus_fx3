@@ -84,7 +84,7 @@
 #define RESET_PROC_BOOT_EVENT                (1 << 0)
 #define ENTER_FPGA_CONFIG_MODE_EVENT         (1 << 1)
 #define ENTER_FPGA_COMM_MODE_EVENT           (1 << 2)
-#define EVT_SET_REG_EN_TO_OUTPUT             (1 << 3)
+#define EVT_DEBUG_MODE                       (1 << 3)
 #define EVT_DISABLE_REGULATOR                (1 << 4)
 #define EVT_ENABLE_REGULATOR                 (1 << 5)
 #define EVT_USB_CONNECT                      (1 << 6)

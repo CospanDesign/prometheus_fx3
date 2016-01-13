@@ -198,7 +198,7 @@ void comm_config_stop(void){
   }
 }
 
-void comm_config_init(void){
+void comm_configure_mcu(void){
 
   CyU3PIoMatrixConfig_t io_cfg;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
@@ -224,7 +224,7 @@ void comm_config_init(void){
   if (GPIO_INITIALIZED) {
     gpio_deinit();
   }
-  comm_gpio_init();
+  comm_gpio_configure_standard();
 
   //setup the P-Block
   pib_clock.clkDiv      = 2; //XXX: I need to figure out how to setup 100MHz clock (input from the FPGA)
@@ -234,14 +234,14 @@ void comm_config_init(void){
   //Initializes the PPort
   retval = CyU3PPibInit(CyTrue, &pib_clock);
   if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "comm_config_init: P-Port Initialization Failed: Error code: %d", retval);
+    CyU3PDebugPrint(4, "comm_configure_mcu: P-Port Initialization Failed: Error code: %d", retval);
     CyFxAppErrorHandler (retval);
   }
 
   //Load the GPIF Configuration generated from the GPIF II Designer
   retval = CyU3PGpifLoad(&CyFxGpifConfig);
   if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "comm_config_init: Failed to load GPIF configuration: Error code: %d", retval);
+    CyU3PDebugPrint(4, "comm_configure_mcu: Failed to load GPIF configuration: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
 
@@ -262,13 +262,13 @@ void comm_config_init(void){
   //Start the state machine
   retval = CyU3PGpifSMStart (RESET, ALPHA_RESET);
   if (retval != CY_U3P_SUCCESS){
-    CyU3PDebugPrint(4, "comm_config_init: Failed to start GPIF state machine: Error code: %d", retval);
+    CyU3PDebugPrint(4, "comm_configure_mcu: Failed to start GPIF state machine: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
 
 }
 
-void comm_gpio_init(){
+void comm_gpio_configure_standard(){
   CyU3PGpioClock_t gpio_clock;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
   GPIO_INITIALIZED = CyFalse;
@@ -281,7 +281,7 @@ void comm_gpio_init(){
 
   retval = CyU3PGpioInit(&gpio_clock, gpio_interrupt);
   if (retval != 0) {
-    CyU3PDebugPrint(4, "comm_gpio_init: Failed to initialize the GPIO: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "comm_gpio_configure_standard: Failed to initialize the GPIO: Error Code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
 

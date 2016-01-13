@@ -11,7 +11,7 @@
 #define CY_FX_GPIOAPP_GPIO_LOW_EVENT     (1 << 1)   /* GPIO low event */
 CyBool_t GPIO_INITIALIZED = CyFalse;
 
-void gpio_init(void);
+void gpio_configure_standard(void);
 
 extern CyU3PEvent gpio_event;    /* GPIO input event group. */
 
@@ -173,7 +173,7 @@ void gpio_deinit(){
   GPIO_INITIALIZED = CyFalse;
 };
 
-void gpio_init(){
+void gpio_configure_standard(){
   CyU3PGpioClock_t gpio_clock;
   CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
   GPIO_INITIALIZED = CyFalse;
@@ -186,7 +186,7 @@ void gpio_init(){
 
   retval = CyU3PGpioInit(&gpio_clock, gpio_interrupt);
   if (retval != 0) {
-    CyU3PDebugPrint(4, "gpio_init: Failed to initialize the GPIO: Error Code: %d", retval);
+    CyU3PDebugPrint(4, "gpio_configure_standard: Failed to initialize the GPIO: Error Code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
 

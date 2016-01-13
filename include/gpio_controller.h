@@ -7,7 +7,7 @@ void gpio_out_thread_entry (uint32_t input);
 void gpio_interrupt( uint8_t gpio_id);
 
 void gpio_deinit();
-void gpio_init();
+void gpio_configure_standard();
 
 void gpio_release(uint32_t gpio_id);
 

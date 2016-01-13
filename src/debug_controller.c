@@ -11,15 +11,15 @@
 
 CyBool_t  DEBUG_ENABLED;
 
-void uart_debug_init (void);
+void uart_debug_setup (void);
 CyBool_t is_debug_enabled(void);
 
-void debug_init (void){
+void debug_setup (void){
   uint16_t size = 0;
   CyU3PEpConfig_t ep_config;
   CyU3PReturnStatus_t retvalue = CY_U3P_SUCCESS;
   CyU3PUSBSpeed_t usb_speed = CyU3PUsbGetSpeed();
-  //uart_debug_init();
+  //uart_debug_setup();
 
   //Get the USB Speed
   switch (usb_speed) {
@@ -60,7 +60,6 @@ void debug_init (void){
 
   DEBUG_ENABLED = CyTrue;
 }
-
 
 CyBool_t is_debug_enabled(void){
   return DEBUG_ENABLED;

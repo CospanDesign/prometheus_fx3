@@ -1,7 +1,7 @@
 #ifndef __COMM_CONTROLLER_H__
 #define __COMM_CONTROLLER_H__
 
-void comm_config_init(void);
+void comm_configure_mcu(void);
   //setup the MCU to use the comm controller configuration
   //  sets up GPIO, UART, I2C
   //  sets up the P-Port
@@ -27,6 +27,6 @@ void comm_config_stop(void);
 
 CyBool_t is_comm_enabled(void);
 
-void comm_gpio_init();
+void comm_gpio_configure_standard();
 
 #endif //__COMM_CONTROLLER_H__
