@@ -38,7 +38,7 @@ void return_to_base(void){
 }
 
 /* Entry function for the main_thread. */
-void main_thread_entry (uint32_t input) {
+void main_thread_func (uint32_t input) {
 	CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
   uint32_t  event_flag;
 
@@ -85,11 +85,6 @@ void main_thread_entry (uint32_t input) {
         //Setup the chip to handle FPGA Config USB Transactions
         fpga_confiure_mcu();
         fpga_configure_usb();
-        /*
-        if (!is_debug_enabled()) 
-          debug_setup();
-        */
-
         //Perform the actual configuration
         retval = config_fpga();
         if (retval != CY_U3P_SUCCESS)
@@ -102,7 +97,6 @@ void main_thread_entry (uint32_t input) {
         //Set the GPIOs up in their normal configuration
         gpio_configure_standard();
       }
-
       if (event_flag & ENTER_FPGA_COMM_MODE_EVENT){
         //Disable any of the other modes
         return_to_base();
@@ -131,7 +125,7 @@ void CyFxApplicationDefine (void){
     retval = CyU3PThreadCreate (
         &main_thread,                 /* Bulk loop App Thread structure */
         "21:Main_Thread",             /* Thread ID and Thread name */
-        main_thread_entry,            /* Bulk loop App Thread Entry function */
+        main_thread_func,            /* Bulk loop App Thread Entry function */
         0,                            /* No input parameter to thread */
         ptr,                          /* Pointer to the allocated thread stack */
         CY_FX_COMM_THREAD_STACK,      /* Bulk loop App Thread stack size */

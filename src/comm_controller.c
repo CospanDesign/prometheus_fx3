@@ -293,22 +293,23 @@ void comm_gpio_configure_standard(){
   gpio_setup_input(INIT_N,              CyFalse, CyFalse,   CyTrue);
   gpio_setup_input(FMC_DETECT_N,        CyFalse, CyFalse,   CyTrue);
   gpio_setup_input(FMC_POWER_GOOD_IN,   CyFalse, CyFalse,   CyTrue);
+  gpio_setup_input(FPGA_INTERRUPT,      CyTrue,  CyFalse,   CyTrue);
 
   //Configure Output Pins
-  //                Name                Default   Override
-  gpio_setup_output(FPGA_SOFT_RESET,    CyTrue,   CyFalse);
-  gpio_setup_output(UART_EN,            CyFalse,  CyFalse);
-  //gpio_setup_output(OTG_5V_EN,          CyFalse,  CyTrue);
-  gpio_setup_output(POWER_SELECT_0,     CyFalse,  CyTrue);
-  gpio_setup_output(POWER_SELECT_1,     CyTrue,  CyTrue);
-  gpio_setup_output(FMC_POWER_GOOD_OUT, CyFalse,  CyTrue);
+  //                Name                Default     Override
+  gpio_setup_output(FPGA_SOFT_RESET,    CyTrue,     CyFalse);
+  gpio_setup_output(UART_EN,            CyFalse,    CyFalse);
+  //gpio_setup_output(OTG_5V_EN,          CyFalse,      CyTrue);
+  gpio_setup_output(POWER_SELECT_0,     CyFalse,    CyTrue);
+  gpio_setup_output(POWER_SELECT_1,     CyTrue,     CyTrue);
+  gpio_setup_output(FMC_POWER_GOOD_OUT, CyFalse,    CyTrue);
 
-  gpio_release(ADJ_REG_EN);
-  gpio_setup_output(ADJ_REG_EN,         CyFalse,  CyFalse);
-  retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
+  //gpio_release(ADJ_REG_EN);
+  //gpio_setup_output(ADJ_REG_EN,         CyFalse,  CyFalse);
+  //retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
   CyU3PThreadSleep (200);
   //Re-enable the Regulator
-  retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
+  //retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
 
 
   GPIO_INITIALIZED = CyTrue;
@@ -324,6 +325,7 @@ void comm_flush_outputs(void){
   CyU3PUsbResetEp         (CY_FX_EP_PRODUCER);
   CyU3PDmaChannelSetXfer  (&COMM_CHANNEL_USB_TO_GPIF, CY_FX_COMM_DMA_TX_SIZE);
 }
+
 void comm_flush_inputs(void){
   CyU3PDmaChannelReset    (&COMM_CHANNEL_GPIF_TO_USB);
   CyU3PUsbFlushEp         (CY_FX_EP_CONSUMER);

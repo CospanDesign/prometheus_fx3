@@ -200,7 +200,7 @@ void gpio_configure_standard(){
 
   //Configure Output Pins
   //                Name                Default   Override
-  gpio_setup_output(FPGA_SOFT_RESET,    CyTrue,   CyFalse);
+  gpio_setup_output(FPGA_SOFT_RESET,    CyFalse,   CyTrue);
   gpio_setup_output(UART_EN,            CyFalse,  CyFalse);
   //gpio_setup_output(OTG_5V_EN,          CyFalse,  CyTrue);
   gpio_setup_output(POWER_SELECT_0,     CyFalse,  CyTrue);

@@ -44,7 +44,6 @@ CyU3PReturnStatus_t config_fpga (void){
   retval = CyU3PSpiSetSsnLine(CyFalse);
   CyU3PThreadSleep(10);
   CyU3PGpioGetValue(INIT_N, &fpga_init);
-  CyU3PGpioGetValue(INIT_N, &fpga_init);
   //In the example they got the value of fpga_init twice
   if (fpga_init) {
     //Something went wrong with configuration
@@ -73,6 +72,8 @@ CyU3PReturnStatus_t config_fpga (void){
   //3. Discard the buffer in the DMA
 
   retval = CY_U3P_SUCCESS;
+  CyBool_t led_value;
+  CyU3PGpioSetValue(FPGA_SOFT_RESET, CyFalse);
   for (ui_idx = 0; (ui_idx < ui_len) && FPGA_CONFIG_APP_ACTIVE; ui_idx += ui_packet_size){
     //Wait 2 seconds to receive all data from the Transfer from the host
     retval = CyU3PDmaChannelGetBuffer (&FPGA_CONFIG_CHANNEL, &in_buffer, 2000);  //Wait 2 seconds
@@ -215,7 +216,7 @@ CyU3PReturnStatus_t fpga_confiure_mcu(void) {
 
   //Setup the io ports: Disable the 32nd bit to allow usage of the SPI controller
   io_cfg.isDQ32Bit        = CyFalse;
-  io_cfg.useUart          = CyTrue;
+  io_cfg.useUart          = CyFalse;
   io_cfg.useI2C           = CyTrue;
   io_cfg.useI2S           = CyFalse;
   io_cfg.useSpi           = CyTrue;
