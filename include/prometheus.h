@@ -68,9 +68,9 @@
 #define ENTER_FPGA_COMM_MODE                 0xB1
 #define ENTER_FPGA_CONFIG_MODE               0xB2
 #define INTERNAL_CONFIG                      0xB3
-
 #define GPIO_CONTROL                         0xB4
-//0xB5, 0xB6 is available too
+#define ENTER_BASE_MODE                      0xB5
+//0xB6 is available too
 
 //User Exposed bit values to set/clear GPIO values
 #define GPIO_FPGA_SOFT_RESET                 (1 << 0)
@@ -85,13 +85,12 @@
 #define ENTER_FPGA_CONFIG_MODE_EVENT         (1 << 1)
 #define ENTER_FPGA_COMM_MODE_EVENT           (1 << 2)
 #define EVT_DEBUG_MODE                       (1 << 3)
-#define EVT_DISABLE_REGULATOR                (1 << 4)
-#define EVT_ENABLE_REGULATOR                 (1 << 5)
+#define EVT_ENTER_BASE_MODE                  (1 << 4)
 #define EVT_USB_CONNECT                      (1 << 6)
 #define EVT_USB_DISCONNECT                   (1 << 7)
 
 
-#define CY_FX_COMM_DMA_BUF_COUNT             (8)        /* Bulk loop channel buffer count */
+#define CY_FX_FPGA_CONFIG_BUF_COUNT          (8)        /* Bulk loop channel buffer count */
 #define CY_FX_COMM_DMA_TX_SIZE               (0)        /* DMA transfer size is set to infinite */
 #define CY_FX_COMM_DMA_RX_SIZE               (0)        /* DMA transfer size is set to infinite */
 #define CY_FX_COMM_THREAD_STACK              (0x1000)   /* Bulk loop application thread stack size */
@@ -117,9 +116,10 @@
 #define CY_FX_EP_COMM_DMA_BUF_COUNT_P_2_U     (2)
 
 #define PROMETHEUS_CONSUMER_PPORT_0           CY_U3P_PIB_SOCKET_0      /* P-port socket 0 consumer */
-#define PROMETHEUS_CONSUMER_PPORT_1           CY_U3P_PIB_SOCKET_1      /* P-port socket 1 consumer */
+//#define PROMETHEUS_CONSUMER_PPORT_1           CY_U3P_PIB_SOCKET_1      /* P-port socket 1 consumer */
 
-#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_2      /* P-port Socket 2 producer */
+#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_1
+//#define PROMETHEUS_PRODUCER_PPORT_0           CY_U3P_PIB_SOCKET_2      /* P-port Socket 2 producer */
 #define PROMETHEUS_PRODUCER_PPORT_1           CY_U3P_PIB_SOCKET_3      /* P-port Socket 3 producer */
 
 
