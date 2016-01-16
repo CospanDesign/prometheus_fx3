@@ -170,7 +170,7 @@ void fpga_configure_usb (void){
   //have to transfer the data to the SPI core in a thread as apposed to
   //automatically transfering it
   dma_config.size           = size;
-  dma_config.count          = CY_FX_COMM_DMA_BUF_COUNT;
+  dma_config.count          = CY_FX_FPGA_CONFIG_BUF_COUNT;
   dma_config.prodSckId      = PROMETHEUS_PRODUCER_USB_SOCKET;
   dma_config.consSckId      = CY_U3P_CPU_SOCKET_CONS;
   dma_config.dmaMode        = CY_U3P_DMA_MODE_BYTE;
