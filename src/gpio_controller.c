@@ -108,36 +108,18 @@ void gpio_setup_output(uint32_t pinnum,
 
 /* Entry function for the gpioOutputThread */
 void gpio_out_thread_entry (uint32_t input){
+    /*
     CyU3PReturnStatus_t retval = CY_U3P_SUCCESS;
 
-    retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
+    retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
     if (retval != CY_U3P_SUCCESS){
         CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
         CyFxAppErrorHandler(retval);
     }
+    */
 
     for (;;){
-        CyU3PThreadSleep(2000);
-        //CyU3PDebugPrint (1, "Tick");
-        /*
-        retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
-        if (retval != CY_U3P_SUCCESS){
-            CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
-            CyFxAppErrorHandler(retval);
-        }
-        CyU3PDebugPrint (0, "LED went on");
-        //Wait for 2 seconds
-        CyU3PThreadSleep(2000);
-
-        retval = CyU3PGpioSetValue (FPGA_SOFT_RESET, CyFalse);
-        if (retval != CY_U3P_SUCCESS){
-            CyU3PDebugPrint (4, "set value failed, error code = %d\n", retval);
-            CyFxAppErrorHandler(retval);
-        }
-        CyU3PDebugPrint (0, "LED went off");
-        //Wait for 2 seconds
-        CyU3PThreadSleep(2000);
-        */
+        CyU3PThreadSleep(10000);
     }
 }
 
@@ -200,7 +182,7 @@ void gpio_configure_standard(){
 
   //Configure Output Pins
   //                Name                Default   Override
-  gpio_setup_output(FPGA_SOFT_RESET,    CyFalse,   CyTrue);
+  gpio_setup_output(FPGA_SOFT_RESET,    CyFalse,   CyFalse);
   gpio_setup_output(UART_EN,            CyFalse,  CyFalse);
   //gpio_setup_output(OTG_5V_EN,          CyFalse,  CyTrue);
   gpio_setup_output(POWER_SELECT_0,     CyFalse,  CyTrue);
