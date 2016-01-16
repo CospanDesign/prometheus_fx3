@@ -23,8 +23,8 @@ uint8_t *select_buffer = 0;                             /* Buffer to hold SEL va
 
 
 /* This is the callback function to handle the USB events. */
-void usb_event_cb (CyU3PUsbEventType_t evtype,  uint16_t evdata){
-  switch (evtype){
+void usb_event_cb (CyU3PUsbEventType_t event,  uint16_t evdata){
+  switch (event){
     case CY_U3P_USB_EVENT_CONNECT:
       CyU3PEventSet(&main_event, EVT_USB_CONNECT, CYU3P_EVENT_OR);
       break;
@@ -140,7 +140,7 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         }
         else {
           ep0_buffer[0] = 0;
-          if (!CyU3PGpioGetValue(FPGA_SOFT_RESET))    ep0_buffer[0] |= GPIO_FPGA_SOFT_RESET;
+          if (!CyU3PGpioGetValue(FPGA_SOFT_RESET))    ep0_buffer[0] &= (~GPIO_FPGA_SOFT_RESET);
           if (CyU3PGpioGetValue(DONE))                ep0_buffer[0] |= GPIO_FPGA_DONE;
           if (CyU3PGpioGetValue(FPGA_INTERRUPT))      ep0_buffer[0] |= GPIO_FPGA_INTERRUPT;
           if (!CyU3PGpioGetValue(FMC_DETECT_N))       ep0_buffer[0] |= GPIO_FMC_DETECT;
@@ -213,12 +213,29 @@ CyBool_t usb_setup_cb (uint32_t setupdat0, uint32_t setupdat1){
         }
         isHandled = CyTrue;
         break;
+      case (ENTER_BASE_MODE):
+        if (USER_WRITING(bReqType)){
+          CyU3PDebugPrint (2, "usb_controller: Enable BASE Mode");
+          CyU3PEventSet(&main_event, EVT_ENTER_BASE_MODE, CYU3P_EVENT_OR);
+          CyU3PUsbAckSetup();
+        }
+        else{
+          ep0_buffer[0] = (is_comm_enabled() || is_fpga_config_enabled()) ? 0x00 : 0x01;
+          CyU3PUsbSendEP0Data (wLength, ep0_buffer);
+        }
+        break;
       case (ENTER_FPGA_COMM_MODE):
         if (USER_WRITING(bReqType)){
-          CyU3PDebugPrint (2, "usb_controller: Enable COMM Mode");
-          CyU3PGpioSetValue (FPGA_SOFT_RESET, CyTrue);
-          CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
-          CyU3PEventSet(&main_event, ENTER_FPGA_COMM_MODE_EVENT, CYU3P_EVENT_OR);
+          ep0_buffer[0] = 0;
+          if (wLength == 0)
+            ep0_buffer[0] = 0x01;
+          else
+            CyU3PUsbGetEP0Data (wLength, ep0_buffer, NULL);
+
+          if (ep0_buffer[0] & 0x01){
+            CyU3PDebugPrint (2, "usb_controller: Enable COMM Mode");
+            CyU3PEventSet(&main_event, ENTER_FPGA_COMM_MODE_EVENT, CYU3P_EVENT_OR);
+          }
           CyU3PUsbAckSetup();
         }
         else{
