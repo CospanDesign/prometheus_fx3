@@ -50,9 +50,10 @@ void main_thread_func (uint32_t input) {
     //This Function will block and wait for events to happen
     retval = CyU3PEventGet (&main_event,
     	                        (RESET_PROC_BOOT_EVENT        |
-                               ENTER_FPGA_CONFIG_MODE_EVENT |
-                               ENTER_FPGA_COMM_MODE_EVENT   |
-                               EVT_USB_CONNECT              |
+                               ENTER_FPGA_CONFIG_MODE_EVENT   |
+                               ENTER_FPGA_COMM_MODE_EVENT     |
+                               ENTER_BASE_MODE                |
+                               EVT_USB_CONNECT                |
                                EVT_USB_DISCONNECT),
 
     	                      CYU3P_EVENT_OR_CLEAR,
@@ -98,11 +99,17 @@ void main_thread_func (uint32_t input) {
         gpio_configure_standard();
       }
       if (event_flag & ENTER_FPGA_COMM_MODE_EVENT){
-        //Disable any of the other modes
         return_to_base();
-        //Initialize the COMM mode
+        CyU3PDebugPrint(4, "Return to base");
         comm_configure_mcu();
+        CyU3PDebugPrint(4, "Configure COMM MCU");
         comm_config_start();
+        CyU3PDebugPrint(4, "Enter Comm Mode");
+      }
+      if (event_flag & EVT_ENTER_BASE_MODE){
+        return_to_base();
+        //gpio_configure_standard();
+        CyU3PDebugPrint(4, "Enter Base Mode");
       }
       if (event_flag & EVT_USB_DISCONNECT){
         CyU3PDebugPrint (2, "USB Disconnect");
