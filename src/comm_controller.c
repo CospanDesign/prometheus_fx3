@@ -32,12 +32,15 @@ void comm_config_start(void){
   //Identify the USB Speed
   switch (usb_speed){
     case CY_U3P_FULL_SPEED:
+      CyU3PDebugPrint(4, "USB FIFO Size = 64");
       size = 64;
       break;
     case CY_U3P_HIGH_SPEED:
+      CyU3PDebugPrint(4, "USB FIFO Size = 512");
       size = 512;
       break;
     case CY_U3P_SUPER_SPEED:
+      CyU3PDebugPrint(4, "USB FIFO Size = 1024");
       size = 1024;
       break;
     default:
@@ -163,6 +166,7 @@ void comm_config_start(void){
   }
 
   COMM_APP_ACTIVE = CyTrue;
+  CyU3PDebugPrint (2, "comm_configure_start: Comm Mode MCU Configured");
 }
 
 void comm_config_stop(void){
@@ -197,6 +201,7 @@ void comm_config_stop(void){
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "comm_config_stop: Failed to disable the comm consumer endpoint: Error code: %d", retval);
   }
+
 }
 
 void comm_configure_mcu(void){
@@ -206,7 +211,7 @@ void comm_configure_mcu(void){
 
   CyU3PPibClock_t pib_clock;
 
-  io_cfg.useUart          = CyTrue;
+  io_cfg.useUart          = CyFalse;
   io_cfg.useI2C           = CyTrue;
   io_cfg.useI2S           = CyFalse;
   io_cfg.useSpi           = CyFalse;
@@ -232,12 +237,15 @@ void comm_configure_mcu(void){
   pib_clock.clkSrc      = CY_U3P_SYS_CLK; //XXX: How to use the external clock?
   pib_clock.isHalfDiv   = CyFalse;
   pib_clock.isDllEnable = CyFalse;
+
   //Initializes the PPort
   retval = CyU3PPibInit(CyTrue, &pib_clock);
   if (retval != CY_U3P_SUCCESS){
     CyU3PDebugPrint(4, "comm_configure_mcu: P-Port Initialization Failed: Error code: %d", retval);
     CyFxAppErrorHandler (retval);
   }
+
+
 
   //Load the GPIF Configuration generated from the GPIF II Designer
   retval = CyU3PGpifLoad(&CyFxGpifConfig);
@@ -258,7 +266,7 @@ void comm_configure_mcu(void){
   CyU3PGpifSocketConfigure(1,                            //Thread
                            PROMETHEUS_PRODUCER_PPORT_0,  //Socket  (2)
                            6,                            //Watermark
-                           CyFalse,                      //Emit a notification
+                           CyFalse,                       //Emit a notification
                            1);                           //Threshold of DMA Flags
   //Start the state machine
   retval = CyU3PGpifSMStart (RESET, ALPHA_RESET);
@@ -266,7 +274,6 @@ void comm_configure_mcu(void){
     CyU3PDebugPrint(4, "comm_configure_mcu: Failed to start GPIF state machine: Error code: %d", retval);
     CyFxAppErrorHandler(retval);
   }
-
 }
 
 void comm_gpio_configure_standard(){
@@ -297,19 +304,14 @@ void comm_gpio_configure_standard(){
 
   //Configure Output Pins
   //                Name                Default     Override
-  gpio_setup_output(FPGA_SOFT_RESET,    CyTrue,     CyFalse);
+  gpio_setup_output(FPGA_SOFT_RESET,    CyFalse,     CyFalse);
   gpio_setup_output(UART_EN,            CyFalse,    CyFalse);
   //gpio_setup_output(OTG_5V_EN,          CyFalse,      CyTrue);
   gpio_setup_output(POWER_SELECT_0,     CyFalse,    CyTrue);
   gpio_setup_output(POWER_SELECT_1,     CyTrue,     CyTrue);
   gpio_setup_output(FMC_POWER_GOOD_OUT, CyFalse,    CyTrue);
 
-  //gpio_release(ADJ_REG_EN);
-  //gpio_setup_output(ADJ_REG_EN,         CyFalse,  CyFalse);
-  //retval = CyU3PGpioSetValue(ADJ_REG_EN, CyTrue);
   CyU3PThreadSleep (200);
-  //Re-enable the Regulator
-  //retval = CyU3PGpioSetValue(ADJ_REG_EN, CyFalse);
 
 
   GPIO_INITIALIZED = CyTrue;
